@@ -72,10 +72,24 @@ Rules:
       messages: [{ role: 'user', content: input + '\n\nRespond with ONLY a JSON object, no markdown fences, no explanation.' }],
     });
 
+    if (!message.content || message.content.length === 0) {
+      return NextResponse.json(
+        { error: 'AI returned empty response', raw: JSON.stringify(message).slice(0, 300) },
+        { status: 500 }
+      );
+    }
+
     let text = message.content[0].type === 'text' ? message.content[0].text : '';
 
+    if (!text) {
+      return NextResponse.json(
+        { error: 'AI returned non-text response', raw: JSON.stringify(message.content[0]).slice(0, 300) },
+        { status: 500 }
+      );
+    }
+
     // Strip markdown code fences if present
-    text = text.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+    text = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
 
     // Parse JSON from response
     let parsed;
