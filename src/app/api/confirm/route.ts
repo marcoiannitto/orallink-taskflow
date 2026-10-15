@@ -63,7 +63,13 @@ export async function POST(req: NextRequest) {
       if (parsed.contact_email) clientFields[F.CLIENT_CONTACT_EMAIL] = parsed.contact_email;
       if (parsed.contact_name) clientFields[F.CLIENT_CONTACT_NAME] = parsed.contact_name;
       if (parsed.client_type) clientFields[F.CLIENT_TYPE] = parsed.client_type;
-      if (assignedMember) clientFields[F.CLIENT_RESPONSIBLE] = assignedMember.name;
+
+      // Build the responsible list: notify names → assigned person → current user
+      const responsibleNames: string[] = parsed.notify?.length
+        ? (parsed.notify as string[])
+        : [assignedMember?.name || user.name];
+      // Save as multi-select array on the client record
+      clientFields[F.CLIENT_RESPONSIBLE] = responsibleNames;
 
       await createClient(clientFields);
       results.push('Client created');
@@ -72,10 +78,8 @@ export async function POST(req: NextRequest) {
       const clientName = parsed.client_name || parsed.title;
       const rawNotes = parsed.notes_append || parsed.description || '';
 
-      // Determine who to email: notify list, or assigned person, or current user
-      const notifyNames: string[] = parsed.notify
-        ? (parsed.notify as string[])
-        : [assignedMember?.name || user.name];
+      // Email everyone in the responsible list
+      const notifyNames: string[] = responsibleNames;
       const recipients = notifyNames
         .map((n: string) => TEAM_MEMBERS.find((m) => m.name.toLowerCase() === n.toLowerCase()))
         .filter(Boolean);
@@ -136,6 +140,11 @@ export async function POST(req: NextRequest) {
           : newEntry;
       }
 
+      // If notify list is provided, update the stored responsible field too
+      if (parsed.notify?.length) {
+        updateFields[F.CLIENT_RESPONSIBLE] = parsed.notify as string[];
+      }
+
       if (Object.keys(updateFields).length > 0) {
         await updateClient(parsed.client_match, updateFields);
         results.push('Client updated');
@@ -144,12 +153,16 @@ export async function POST(req: NextRequest) {
         const clientName = parsed.client_name || parsed.title;
         const rawNotes = parsed.notes_append || '';
 
-        const assignedMember = TEAM_MEMBERS.find(
-          (m) => m.name.toLowerCase() === (parsed.assigned_to || user.name).toLowerCase()
-        );
+        // Read the client's stored responsible list as default recipients
+        const existingClient = await getClientById(parsed.client_match);
+        const storedResponsible = existingClient?.responsible || [];
+
+        // Priority: explicit notify → stored responsible list → assigned person → current user
         const notifyNames: string[] = parsed.notify?.length
           ? (parsed.notify as string[])
-          : [assignedMember?.name || user.name];
+          : storedResponsible.length > 0
+            ? storedResponsible
+            : [user.name];
         const recipients = notifyNames
           .map((n: string) => TEAM_MEMBERS.find((m) => m.name.toLowerCase() === n.toLowerCase()))
           .filter(Boolean);

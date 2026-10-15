@@ -29,7 +29,8 @@ export async function POST(req: NextRequest) {
 
     const clientNames = clients.map((c) => {
       const notesSnippet = c.notes ? c.notes.slice(0, 80).replace(/\n/g, ' ') : '';
-      return `${c.name} (ID: ${c.id}, Status: ${c.status || 'Unknown'}${c.nextFollowUp ? ', Follow-up: ' + c.nextFollowUp : ''}${notesSnippet ? ', Notes: ' + notesSnippet + '...' : ''})`;
+      const responsibleStr = c.responsible.length > 0 ? c.responsible.join(', ') : 'None';
+      return `${c.name} (ID: ${c.id}, Status: ${c.status || 'Unknown'}, Responsible: ${responsibleStr}${c.nextFollowUp ? ', Follow-up: ' + c.nextFollowUp : ''}${notesSnippet ? ', Notes: ' + notesSnippet + '...' : ''})`;
     }).join('\n');
     const taskList = recentTasks.slice(0, 10).map((t) => `- ${t.task} (Due: ${t.dueDate || 'none'}, Status: ${t.status || 'Open'})`).join('\n');
     const teamList = TEAM_MEMBERS.map((m) => `${m.name} (${m.role})`).join(', ');
@@ -74,7 +75,7 @@ Rules:
 - If the input mentions a contact person and their email, extract both into contact_name and contact_email.
 - If the input mentions a follow-up date or deadline, put it in due_date.
 - Write a helpful notes_append describing next steps based on the input context.
-- If the input says "notify", "email", "tell", or "let X know", add those team member names to the notify array. If no notification is mentioned, default to the assigned_to person.
+- The "notify" array determines who is RESPONSIBLE for this client and who receives all future email updates. If the input says "notify", "email", "tell", "let X know", or mentions who should handle/own/be responsible for a client, add those team member names to the notify array. If no notification is mentioned, default to the assigned_to person. The notify list is saved on the client record, so future updates (even from Airtable directly) will email all listed people.
 - Default priority is Medium.
 - Today's date is ${new Date().toISOString().split('T')[0]}.
 - "Tomorrow" means the next day, "next week" means +7 days, "Friday" means the coming Friday.

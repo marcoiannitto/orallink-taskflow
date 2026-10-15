@@ -28,13 +28,20 @@ export interface ClientRecord {
   id: string;
   name: string;
   status?: string;
-  responsible?: string;
+  responsible: string[];
   nextFollowUp?: string;
   notes?: string;
   [key: string]: unknown;
 }
 
 const F = AIRTABLE.FIELDS;
+
+/** Normalize Airtable multi-select (array), single-select (string), or empty → string[] */
+function normalizeResponsible(val: unknown): string[] {
+  if (Array.isArray(val)) return val.filter((v): v is string => typeof v === 'string');
+  if (typeof val === 'string' && val.trim()) return [val.trim()];
+  return [];
+}
 
 export async function getTasks(filterFormula?: string): Promise<TaskRecord[]> {
   const options: Record<string, unknown> = {
@@ -79,7 +86,7 @@ export async function getClients(filterFormula?: string): Promise<ClientRecord[]
     id: r.id,
     name: (r.get(F.CLIENT_NAME) as string) || '',
     status: r.get(F.CLIENT_STATUS) as string | undefined,
-    responsible: r.get(F.CLIENT_RESPONSIBLE) as string | undefined,
+    responsible: normalizeResponsible(r.get(F.CLIENT_RESPONSIBLE)),
     nextFollowUp: r.get(F.CLIENT_NEXT_FOLLOWUP) as string | undefined,
     notes: r.get(F.CLIENT_NOTES) as string | undefined,
   }));
@@ -102,7 +109,7 @@ export async function getClientById(id: string): Promise<ClientRecord | null> {
       id: r.id,
       name: (r.get(F.CLIENT_NAME) as string) || '',
       status: r.get(F.CLIENT_STATUS) as string | undefined,
-      responsible: r.get(F.CLIENT_RESPONSIBLE) as string | undefined,
+      responsible: normalizeResponsible(r.get(F.CLIENT_RESPONSIBLE)),
       nextFollowUp: r.get(F.CLIENT_NEXT_FOLLOWUP) as string | undefined,
       notes: r.get(F.CLIENT_NOTES) as string | undefined,
     };

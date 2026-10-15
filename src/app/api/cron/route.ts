@@ -55,10 +55,13 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Client follow-up reminders
+    // Client follow-up reminders — notify ALL responsible people
     for (const client of clients) {
-      const member = TEAM_MEMBERS.find((m) => m.name === client.responsible);
-      if (!member) continue;
+      const responsibleNames = client.responsible;
+      const members = responsibleNames
+        .map((name) => TEAM_MEMBERS.find((m) => m.name === name))
+        .filter(Boolean);
+      if (members.length === 0) continue;
 
       try {
         // AI-summarize next steps from notes
@@ -72,7 +75,7 @@ export async function GET(req: NextRequest) {
 
         await resend.emails.send({
           from: FROM_EMAIL,
-          to: member.email,
+          to: members.map((m) => m!.email),
           subject: `Client Follow-up: ${client.name}`,
           html: `
             <div style="font-family: 'Trebuchet MS', Arial, sans-serif; max-width: 480px; margin: 0 auto;">
@@ -91,10 +94,10 @@ export async function GET(req: NextRequest) {
           `,
         });
 
-        results.push(`Follow-up reminder sent to ${member.name}: ${client.name}`);
+        results.push(`Follow-up reminder sent to ${members.map((m) => m!.name).join(', ')}: ${client.name}`);
       } catch (emailError) {
         console.error(`Failed to send follow-up for ${client.name}:`, emailError);
-        results.push(`FAILED follow-up ${member.name}: ${client.name}`);
+        results.push(`FAILED follow-up for ${client.name}`);
       }
     }
 

@@ -7,7 +7,7 @@ interface Client {
   id: string;
   name: string;
   status?: string;
-  responsible?: string;
+  responsible?: string[];
   [key: string]: unknown;
 }
 
@@ -94,8 +94,12 @@ export default function PipelinePage() {
                           className="w-full text-left bg-white hover:bg-[#E2F0F6] rounded-lg p-3 transition-all shadow-sm hover:shadow-md border border-[#E5E7EB] hover:border-[#49A3CC]/30"
                         >
                           <p className="text-sm font-semibold text-[#153543] truncate">{client.name}</p>
-                          {client.responsible && (
-                            <p className="text-[11px] text-[#153543]/40 mt-1 font-medium">{client.responsible as string}</p>
+                          {client.responsible && client.responsible.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1.5">
+                              {client.responsible.map((name) => (
+                                <span key={name} className="text-[10px] px-1.5 py-0.5 rounded bg-[#E2F0F6] text-[#49A3CC] font-medium">{name}</span>
+                              ))}
+                            </div>
                           )}
                         </button>
                       ))}
@@ -134,7 +138,7 @@ export default function PipelinePage() {
                         {key}
                       </span>
                       <span className="text-sm text-[#153543]">
-                        {typeof val === 'string' ? val : JSON.stringify(val)}
+                        {Array.isArray(val) ? val.join(', ') : typeof val === 'string' ? val : JSON.stringify(val)}
                       </span>
                     </div>
                   );
