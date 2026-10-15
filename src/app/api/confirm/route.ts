@@ -129,6 +129,64 @@ export async function POST(req: NextRequest) {
       if (Object.keys(updateFields).length > 0) {
         await updateClient(parsed.client_match, updateFields);
         results.push('Client updated');
+
+        // Send email notification on update
+        const clientName = parsed.client_name || parsed.title;
+        const rawNotes = parsed.notes_append || '';
+
+        const assignedMember = TEAM_MEMBERS.find(
+          (m) => m.name.toLowerCase() === (parsed.assigned_to || user.name).toLowerCase()
+        );
+        const notifyNames: string[] = parsed.notify?.length
+          ? (parsed.notify as string[])
+          : [assignedMember?.name || user.name];
+        const recipients = notifyNames
+          .map((n: string) => TEAM_MEMBERS.find((m) => m.name.toLowerCase() === n.toLowerCase()))
+          .filter(Boolean);
+
+        if (recipients.length > 0 && process.env.RESEND_API_KEY) {
+          const nextSteps = rawNotes
+            ? await summarizeNextSteps(clientName, rawNotes, parsed.status_update)
+            : null;
+
+          const followUpDate = parsed.due_date
+            ? new Date(parsed.due_date).toLocaleDateString('en-SG', { weekday: 'short', day: 'numeric', month: 'short' })
+            : null;
+
+          const changes: string[] = [];
+          if (parsed.status_update) changes.push(`Status → ${parsed.status_update}`);
+          if (followUpDate) changes.push(`Follow-up → ${followUpDate}`);
+          if (rawNotes) changes.push('Notes updated');
+
+          try {
+            await resend.emails.send({
+              from: FROM_EMAIL,
+              to: recipients.map((m) => m!.email),
+              subject: `Client Updated: ${clientName}`,
+              html: `
+                <div style="font-family: 'Trebuchet MS', Arial, sans-serif; max-width: 480px; margin: 0 auto;">
+                  <div style="background: #153543; color: white; padding: 16px 20px; border-radius: 12px 12px 0 0;">
+                    <h2 style="margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">Client Updated</h2>
+                  </div>
+                  <div style="background: white; border: 1px solid #D1D5DB; border-top: 0; padding: 20px; border-radius: 0 0 12px 12px;">
+                    <h3 style="color: #153543; margin: 0 0 4px;">${clientName}</h3>
+                    <p style="color: #49A3CC; font-size: 13px; margin: 0 0 12px;">${changes.join(' · ')}</p>
+                    ${nextSteps ? `
+                    <div style="background: #F7F7F7; border-radius: 8px; padding: 12px; margin: 0;">
+                      <p style="font-size: 12px; color: #153543; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 6px;">Next Steps</p>
+                      <p style="font-size: 14px; color: #153543; margin: 0; white-space: pre-line;">${nextSteps}</p>
+                    </div>
+                    ` : ''}
+                  </div>
+                </div>
+              `,
+            });
+            results.push(`Email sent to ${recipients.map((m) => m!.name).join(', ')}`);
+          } catch (emailError) {
+            console.error('Email send error:', emailError);
+            results.push('Client updated but email failed');
+          }
+        }
       }
     }
 
