@@ -60,15 +60,15 @@ Return a JSON object with these fields:
 }
 
 Rules:
-- PRIORITIZE CRM: If the input mentions a new company/client/contact name that doesn't match existing clients, use "create_client" intent.
+- FUZZY MATCHING IS CRITICAL: When the user mentions a company/client name, ALWAYS check the existing clients list first. Match liberally: ignore spacing ("asia medic" = "Asiamedic"), case, punctuation, abbreviations ("SG Dental" = "Singapore Dental"), partial names ("Raffles" = "Raffles Medical Group"), and minor typos. If there is ANY plausible match (even partial), use "update_client" with that client's record ID in client_match. Only use "create_client" if you are confident the name is truly new and does not match any existing client.
+- NEVER assume create_client when the name is even remotely close to an existing client. When in doubt, set clarification_needed to ask the user: "Did you mean [closest match]? Or is this a new client?"
 - If mentioning an existing client by name, use "update_client" to update their status or notes.
 - Only use "create_task" if the input is clearly about an internal task unrelated to a client.
-- For new clients, default status_update to "Exploration" unless the input suggests otherwise (e.g. "onboarding" → "Onboarded", "pilot" → "Pilot", "MOU" → "MOU").
+- For new clients, default status_update to "Exploration" unless the input suggests otherwise (e.g. "onboarding" -> "Onboarded", "pilot" -> "Pilot", "MOU" -> "MOU").
 - If the input mentions a contact person and their email, extract both into contact_name and contact_email.
 - If the input mentions a follow-up date or deadline, put it in due_date.
 - Write a helpful notes_append describing next steps based on the input context.
 - If the input says "notify", "email", "tell", or "let X know", add those team member names to the notify array. If no notification is mentioned, default to the assigned_to person.
-- If the input mentions a client name, try to match it to an existing client. Use fuzzy matching.
 - Default priority is Medium.
 - Today's date is ${new Date().toISOString().split('T')[0]}.
 - "Tomorrow" means the next day, "next week" means +7 days, "Friday" means the coming Friday.
