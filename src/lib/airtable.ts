@@ -95,3 +95,10 @@ export async function getTasksDueSoon(): Promise<TaskRecord[]> {
     `AND(IS_BEFORE({${F.TASK_DUE_DATE}}, DATEADD(NOW(), 1, 'hours')), {${F.TASK_NOTIFICATION_SENT}} = FALSE(), {${F.TASK_STATUS}} != 'Done')`
   );
 }
+
+export async function getClientsDueFollowUp(): Promise<ClientRecord[]> {
+  const today = new Date().toISOString().split('T')[0];
+  return getClients(
+    `AND(IS_BEFORE({${F.CLIENT_NEXT_FOLLOWUP}}, DATEADD(TODAY(), 1, 'days')), {${F.CLIENT_NEXT_FOLLOWUP}} != BLANK(), {${F.CLIENT_STATUS}} != 'Inactive')`
+  );
+}

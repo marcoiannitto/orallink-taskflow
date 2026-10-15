@@ -55,6 +55,7 @@ Return a JSON object with these fields:
   "status_update": "Exploration" | "MOU" | "Pilot" | "Onboarded" | "Active" | "Inactive" | null,
   "notes_append": "description of next steps, notes, or context, or null",
   "description": "expanded description of the action",
+  "notify": ["team member names to email about this, or empty array"],
   "clarification_needed": "question to ask user if input is ambiguous, or null"
 }
 
@@ -66,6 +67,7 @@ Rules:
 - If the input mentions a contact person and their email, extract both into contact_name and contact_email.
 - If the input mentions a follow-up date or deadline, put it in due_date.
 - Write a helpful notes_append describing next steps based on the input context.
+- If the input says "notify", "email", "tell", or "let X know", add those team member names to the notify array. If no notification is mentioned, default to the assigned_to person.
 - If the input mentions a client name, try to match it to an existing client. Use fuzzy matching.
 - Default priority is Medium.
 - Today's date is ${new Date().toISOString().split('T')[0]}.
