@@ -59,7 +59,7 @@ Return a JSON object with these fields:
   "priority": "High" | "Medium" | "Low",
   "type": "CRM Follow-up" | "Reminder" | "To-do" | "Other",
   "status_update": "Exploration" | "MOU" | "Pilot" | "Onboarded" | "Active" | "Inactive" | null,
-  "notes_append": "description of next steps, notes, or context, or null",
+  "notes_append": "concise new note to APPEND (not replace). Write only the new information, e.g. 'send message to Asia Medic before 20 Oct'. The system will add a date prefix and append to existing notes automatically.",
   "description": "expanded description of the action",
   "notify": ["team member names to email about this, or empty array"],
   "clarification_needed": "question to ask user if input is ambiguous, or null"

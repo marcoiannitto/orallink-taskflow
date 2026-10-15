@@ -89,6 +89,28 @@ export async function createClient(fields: Partial<FieldSet>) {
   return clientsTable.create([{ fields }]);
 }
 
+export async function getClientById(id: string): Promise<ClientRecord | null> {
+  try {
+    const records = await clientsTable.select({
+      returnFieldsByFieldId: true,
+      filterByFormula: `RECORD_ID() = '${id}'`,
+      maxRecords: 1,
+    } as Airtable.SelectOptions<FieldSet>).all();
+    if (records.length === 0) return null;
+    const r = records[0];
+    return {
+      id: r.id,
+      name: (r.get(F.CLIENT_NAME) as string) || '',
+      status: r.get(F.CLIENT_STATUS) as string | undefined,
+      responsible: r.get(F.CLIENT_RESPONSIBLE) as string | undefined,
+      nextFollowUp: r.get(F.CLIENT_NEXT_FOLLOWUP) as string | undefined,
+      notes: r.get(F.CLIENT_NOTES) as string | undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function updateClient(id: string, fields: Partial<FieldSet>) {
   return clientsTable.update(id, fields);
 }

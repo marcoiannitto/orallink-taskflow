@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { FieldSet } from 'airtable';
 import { Resend } from 'resend';
 import { getCurrentUser } from '@/lib/auth';
-import { createTask, createClient, updateClient } from '@/lib/airtable';
+import { createTask, createClient, updateClient, getClientById } from '@/lib/airtable';
 import { summarizeNextSteps } from '@/lib/ai-summary';
 import { AIRTABLE, TEAM_MEMBERS } from '@/lib/constants';
 
@@ -123,8 +123,18 @@ export async function POST(req: NextRequest) {
     if (parsed.intent === 'update_client' && parsed.client_match) {
       const updateFields: Partial<FieldSet> = {};
       if (parsed.status_update) updateFields[F.CLIENT_STATUS] = parsed.status_update;
-      if (parsed.notes_append) updateFields[F.CLIENT_NOTES] = parsed.notes_append;
       if (parsed.due_date) updateFields[F.CLIENT_NEXT_FOLLOWUP] = parsed.due_date;
+
+      // Append notes with datestamp, never replace
+      if (parsed.notes_append) {
+        const existing = await getClientById(parsed.client_match);
+        const dateStamp = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' });
+        const newEntry = `${dateStamp} - ${parsed.notes_append}`;
+        const existingNotes = existing?.notes?.trim() || '';
+        updateFields[F.CLIENT_NOTES] = existingNotes
+          ? `${existingNotes}\n${newEntry}`
+          : newEntry;
+      }
 
       if (Object.keys(updateFields).length > 0) {
         await updateClient(parsed.client_match, updateFields);
