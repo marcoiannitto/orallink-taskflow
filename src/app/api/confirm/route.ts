@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FieldSet } from 'airtable';
 import { getCurrentUser } from '@/lib/auth';
-import { createTask, updateClient } from '@/lib/airtable';
+import { createTask, createClient, updateClient } from '@/lib/airtable';
 import { AIRTABLE, TEAM_MEMBERS } from '@/lib/constants';
 
 const F = AIRTABLE.FIELDS;
@@ -40,11 +40,37 @@ export async function POST(req: NextRequest) {
       results.push('Task created');
     }
 
+    // Create new client
+    if (parsed.intent === 'create_client') {
+      const assignedMember = TEAM_MEMBERS.find(
+        (m) => m.name.toLowerCase() === (parsed.assigned_to || user.name).toLowerCase()
+      );
+
+      const clientFields: Partial<FieldSet> = {
+        [F.CLIENT_NAME]: parsed.client_name || parsed.title,
+        [F.CLIENT_STATUS]: parsed.status_update || 'Exploration',
+        [F.CLIENT_DATE_CREATED]: new Date().toISOString().split('T')[0],
+      };
+
+      if (parsed.notes_append || parsed.description) {
+        clientFields[F.CLIENT_NOTES] = parsed.notes_append || parsed.description;
+      }
+      if (parsed.due_date) clientFields[F.CLIENT_NEXT_FOLLOWUP] = parsed.due_date;
+      if (parsed.contact_email) clientFields[F.CLIENT_CONTACT_EMAIL] = parsed.contact_email;
+      if (parsed.contact_name) clientFields[F.CLIENT_CONTACT_NAME] = parsed.contact_name;
+      if (parsed.client_type) clientFields[F.CLIENT_TYPE] = parsed.client_type;
+      if (assignedMember) clientFields[F.CLIENT_RESPONSIBLE] = assignedMember.name;
+
+      await createClient(clientFields);
+      results.push('Client created');
+    }
+
     // Update client status if applicable
     if (parsed.intent === 'update_client' && parsed.client_match) {
       const updateFields: Partial<FieldSet> = {};
-      if (parsed.status_update) updateFields['Status'] = parsed.status_update;
-      if (parsed.notes_append) updateFields['Notes'] = parsed.notes_append;
+      if (parsed.status_update) updateFields[F.CLIENT_STATUS] = parsed.status_update;
+      if (parsed.notes_append) updateFields[F.CLIENT_NOTES] = parsed.notes_append;
+      if (parsed.due_date) updateFields[F.CLIENT_NEXT_FOLLOWUP] = parsed.due_date;
 
       if (Object.keys(updateFields).length > 0) {
         await updateClient(parsed.client_match, updateFields);

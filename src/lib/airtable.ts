@@ -72,21 +72,18 @@ export async function getClients(filterFormula?: string): Promise<ClientRecord[]
   if (filterFormula) options.filterByFormula = filterFormula;
 
   const records = await clientsTable.select(options as Airtable.SelectOptions<FieldSet>).all();
-  return records.map((r) => {
-    const fields: ClientRecord = {
-      id: r.id,
-      name: (r.get('Name') as string) || (r.get('Company') as string) || '',
-      status: r.get('Status') as string | undefined,
-      responsible: r.get('Responsible') as string | undefined,
-    };
-    // Include all other fields
-    for (const [key, val] of Object.entries(r.fields)) {
-      if (!(key in fields)) {
-        fields[key] = val;
-      }
-    }
-    return fields;
-  });
+  return records.map((r) => ({
+    id: r.id,
+    name: (r.get(F.CLIENT_NAME) as string) || '',
+    status: r.get(F.CLIENT_STATUS) as string | undefined,
+    responsible: r.get(F.CLIENT_RESPONSIBLE) as string | undefined,
+    nextFollowUp: r.get(F.CLIENT_NEXT_FOLLOWUP) as string | undefined,
+    notes: r.get(F.CLIENT_NOTES) as string | undefined,
+  }));
+}
+
+export async function createClient(fields: Partial<FieldSet>) {
+  return clientsTable.create([{ fields }]);
 }
 
 export async function updateClient(id: string, fields: Partial<FieldSet>) {

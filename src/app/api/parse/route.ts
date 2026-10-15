@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     const taskList = recentTasks.slice(0, 10).map((t) => `- ${t.task} (Due: ${t.dueDate || 'none'}, Status: ${t.status || 'Open'})`).join('\n');
     const teamList = TEAM_MEMBERS.map((m) => `${m.name} (${m.role})`).join(', ');
 
-    const systemPrompt = `You are TaskFlow AI, the task and CRM assistant for OralLink's founding team. Parse the user's natural language input into a structured action.
+    const systemPrompt = `You are TaskFlow AI, the CRM and task assistant for OralLink's founding team. Your PRIMARY job is managing the client pipeline. Parse the user's natural language input into a structured action.
 
 Current user: ${user.name} (${user.role})
 Team members: ${teamList}
@@ -41,25 +41,33 @@ ${taskList || 'No recent tasks'}
 
 Return a JSON object with these fields:
 {
-  "intent": "create_task" | "update_task" | "create_client" | "update_client" | "note",
+  "intent": "create_client" | "update_client" | "create_task" | "update_task" | "note",
   "client_match": "record ID of matched client, or null",
-  "client_name": "client name if creating new, or matched name",
-  "title": "task or action title",
+  "client_name": "client/company name",
+  "contact_name": "contact person name, or null",
+  "contact_email": "contact email, or null",
+  "client_type": "Corporate" | "AAC/Nursing Home" | "Distributor" | "API Distributor" | "SME" | "Insurance" | "Government" | null,
+  "title": "short summary of the action",
   "assigned_to": "team member name (default: current user)",
   "due_date": "YYYY-MM-DD or null",
   "priority": "High" | "Medium" | "Low",
   "type": "CRM Follow-up" | "Reminder" | "To-do" | "Other",
-  "status_update": "new status for client if updating, or null",
-  "notes_append": "any notes to add, or null",
-  "description": "expanded description of the task",
+  "status_update": "Exploration" | "MOU" | "Pilot" | "Onboarded" | "Active" | "Inactive" | null,
+  "notes_append": "description of next steps, notes, or context, or null",
+  "description": "expanded description of the action",
   "clarification_needed": "question to ask user if input is ambiguous, or null"
 }
 
 Rules:
+- PRIORITIZE CRM: If the input mentions a new company/client/contact name that doesn't match existing clients, use "create_client" intent.
+- If mentioning an existing client by name, use "update_client" to update their status or notes.
+- Only use "create_task" if the input is clearly about an internal task unrelated to a client.
+- For new clients, default status_update to "Exploration" unless the input suggests otherwise (e.g. "onboarding" → "Onboarded", "pilot" → "Pilot", "MOU" → "MOU").
+- If the input mentions a contact person and their email, extract both into contact_name and contact_email.
+- If the input mentions a follow-up date or deadline, put it in due_date.
+- Write a helpful notes_append describing next steps based on the input context.
 - If the input mentions a client name, try to match it to an existing client. Use fuzzy matching.
-- If no due date is mentioned, leave it null.
 - Default priority is Medium.
-- If the input is ambiguous, set clarification_needed with a specific question.
 - Today's date is ${new Date().toISOString().split('T')[0]}.
 - "Tomorrow" means the next day, "next week" means +7 days, "Friday" means the coming Friday.
 - If assigning to someone, match to the team list above.

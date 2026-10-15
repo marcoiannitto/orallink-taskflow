@@ -7,6 +7,9 @@ interface ParsedResult {
   intent: string;
   client_match: string | null;
   client_name: string | null;
+  contact_name: string | null;
+  contact_email: string | null;
+  client_type: string | null;
   title: string;
   assigned_to: string;
   due_date: string | null;
@@ -138,67 +141,152 @@ export default function DashboardPage() {
             <div className="p-4 space-y-3">
               {editing ? (
                 <>
-                  <Field label="Title">
-                    <input
-                      value={editData?.title || ''}
-                      onChange={(e) => setEditData({ ...editData!, title: e.target.value })}
-                      className="w-full px-2 py-1 border border-[#D1D5DB] rounded text-sm"
-                    />
-                  </Field>
-                  <Field label="Assigned to">
-                    <input
-                      value={editData?.assigned_to || ''}
-                      onChange={(e) => setEditData({ ...editData!, assigned_to: e.target.value })}
-                      className="w-full px-2 py-1 border border-[#D1D5DB] rounded text-sm"
-                    />
-                  </Field>
-                  <Field label="Due date">
-                    <input
-                      type="date"
-                      value={editData?.due_date || ''}
-                      onChange={(e) => setEditData({ ...editData!, due_date: e.target.value })}
-                      className="w-full px-2 py-1 border border-[#D1D5DB] rounded text-sm"
-                    />
-                  </Field>
-                  <Field label="Priority">
-                    <select
-                      value={editData?.priority || 'Medium'}
-                      onChange={(e) => setEditData({ ...editData!, priority: e.target.value })}
-                      className="w-full px-2 py-1 border border-[#D1D5DB] rounded text-sm"
-                    >
-                      <option>High</option>
-                      <option>Medium</option>
-                      <option>Low</option>
-                    </select>
-                  </Field>
-                  <Field label="Type">
-                    <select
-                      value={editData?.type || 'To-do'}
-                      onChange={(e) => setEditData({ ...editData!, type: e.target.value })}
-                      className="w-full px-2 py-1 border border-[#D1D5DB] rounded text-sm"
-                    >
-                      <option>CRM Follow-up</option>
-                      <option>Reminder</option>
-                      <option>To-do</option>
-                      <option>Other</option>
-                    </select>
-                  </Field>
+                  {displayData.intent === 'create_client' || displayData.intent === 'update_client' ? (
+                    <>
+                      <Field label="Client name">
+                        <input
+                          value={editData?.client_name || ''}
+                          onChange={(e) => setEditData({ ...editData!, client_name: e.target.value })}
+                          className="w-full px-2 py-1 border border-[#D1D5DB] rounded text-sm text-[#153543]"
+                        />
+                      </Field>
+                      <Field label="Contact">
+                        <input
+                          value={editData?.contact_name || ''}
+                          onChange={(e) => setEditData({ ...editData!, contact_name: e.target.value })}
+                          className="w-full px-2 py-1 border border-[#D1D5DB] rounded text-sm text-[#153543]"
+                        />
+                      </Field>
+                      <Field label="Email">
+                        <input
+                          value={editData?.contact_email || ''}
+                          onChange={(e) => setEditData({ ...editData!, contact_email: e.target.value })}
+                          className="w-full px-2 py-1 border border-[#D1D5DB] rounded text-sm text-[#153543]"
+                        />
+                      </Field>
+                      <Field label="Status">
+                        <select
+                          value={editData?.status_update || 'Exploration'}
+                          onChange={(e) => setEditData({ ...editData!, status_update: e.target.value })}
+                          className="w-full px-2 py-1 border border-[#D1D5DB] rounded text-sm text-[#153543]"
+                        >
+                          <option>Exploration</option>
+                          <option>MOU</option>
+                          <option>Pilot</option>
+                          <option>Onboarded</option>
+                          <option>Active</option>
+                          <option>Inactive</option>
+                        </select>
+                      </Field>
+                      <Field label="Follow-up">
+                        <input
+                          type="date"
+                          value={editData?.due_date || ''}
+                          onChange={(e) => setEditData({ ...editData!, due_date: e.target.value })}
+                          className="w-full px-2 py-1 border border-[#D1D5DB] rounded text-sm text-[#153543]"
+                        />
+                      </Field>
+                      <Field label="Assigned to">
+                        <input
+                          value={editData?.assigned_to || ''}
+                          onChange={(e) => setEditData({ ...editData!, assigned_to: e.target.value })}
+                          className="w-full px-2 py-1 border border-[#D1D5DB] rounded text-sm text-[#153543]"
+                        />
+                      </Field>
+                      <Field label="Notes">
+                        <textarea
+                          value={editData?.notes_append || editData?.description || ''}
+                          onChange={(e) => setEditData({ ...editData!, notes_append: e.target.value })}
+                          className="w-full px-2 py-1 border border-[#D1D5DB] rounded text-sm text-[#153543] resize-none"
+                          rows={2}
+                        />
+                      </Field>
+                    </>
+                  ) : (
+                    <>
+                      <Field label="Title">
+                        <input
+                          value={editData?.title || ''}
+                          onChange={(e) => setEditData({ ...editData!, title: e.target.value })}
+                          className="w-full px-2 py-1 border border-[#D1D5DB] rounded text-sm text-[#153543]"
+                        />
+                      </Field>
+                      <Field label="Assigned to">
+                        <input
+                          value={editData?.assigned_to || ''}
+                          onChange={(e) => setEditData({ ...editData!, assigned_to: e.target.value })}
+                          className="w-full px-2 py-1 border border-[#D1D5DB] rounded text-sm text-[#153543]"
+                        />
+                      </Field>
+                      <Field label="Due date">
+                        <input
+                          type="date"
+                          value={editData?.due_date || ''}
+                          onChange={(e) => setEditData({ ...editData!, due_date: e.target.value })}
+                          className="w-full px-2 py-1 border border-[#D1D5DB] rounded text-sm text-[#153543]"
+                        />
+                      </Field>
+                      <Field label="Priority">
+                        <select
+                          value={editData?.priority || 'Medium'}
+                          onChange={(e) => setEditData({ ...editData!, priority: e.target.value })}
+                          className="w-full px-2 py-1 border border-[#D1D5DB] rounded text-sm text-[#153543]"
+                        >
+                          <option>High</option>
+                          <option>Medium</option>
+                          <option>Low</option>
+                        </select>
+                      </Field>
+                      <Field label="Type">
+                        <select
+                          value={editData?.type || 'To-do'}
+                          onChange={(e) => setEditData({ ...editData!, type: e.target.value })}
+                          className="w-full px-2 py-1 border border-[#D1D5DB] rounded text-sm text-[#153543]"
+                        >
+                          <option>CRM Follow-up</option>
+                          <option>Reminder</option>
+                          <option>To-do</option>
+                          <option>Other</option>
+                        </select>
+                      </Field>
+                    </>
+                  )}
                 </>
               ) : (
                 <>
-                  <Field label="Title"><span className="text-sm font-medium">{displayData.title}</span></Field>
-                  {displayData.client_name && <Field label="Client"><span className="text-sm">{displayData.client_name}</span></Field>}
-                  <Field label="Assigned to"><span className="text-sm">{displayData.assigned_to}</span></Field>
-                  {displayData.due_date && <Field label="Due date"><span className="text-sm">{displayData.due_date}</span></Field>}
-                  <Field label="Priority">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      displayData.priority === 'High' ? 'bg-red-100 text-red-700' :
-                      displayData.priority === 'Low' ? 'bg-green-100 text-green-700' :
-                      'bg-yellow-100 text-yellow-700'
-                    }`}>{displayData.priority}</span>
-                  </Field>
-                  <Field label="Type"><span className="text-sm">{displayData.type}</span></Field>
-                  {displayData.description && <Field label="Description"><span className="text-sm text-[#153543]/70">{displayData.description}</span></Field>}
+                  {displayData.intent === 'create_client' || displayData.intent === 'update_client' ? (
+                    <>
+                      <Field label="Client"><span className="text-sm font-medium text-[#153543]">{displayData.client_name}</span></Field>
+                      {displayData.contact_name && <Field label="Contact"><span className="text-sm text-[#153543]">{displayData.contact_name}</span></Field>}
+                      {displayData.contact_email && <Field label="Email"><span className="text-sm text-[#153543]">{displayData.contact_email}</span></Field>}
+                      <Field label="Status">
+                        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700">
+                          {displayData.status_update || 'Exploration'}
+                        </span>
+                      </Field>
+                      {displayData.due_date && <Field label="Follow-up"><span className="text-sm text-[#153543]">{displayData.due_date}</span></Field>}
+                      <Field label="Assigned to"><span className="text-sm text-[#153543]">{displayData.assigned_to}</span></Field>
+                      {(displayData.notes_append || displayData.description) && (
+                        <Field label="Notes"><span className="text-sm text-[#153543]/70">{displayData.notes_append || displayData.description}</span></Field>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <Field label="Title"><span className="text-sm font-medium text-[#153543]">{displayData.title}</span></Field>
+                      {displayData.client_name && <Field label="Client"><span className="text-sm text-[#153543]">{displayData.client_name}</span></Field>}
+                      <Field label="Assigned to"><span className="text-sm text-[#153543]">{displayData.assigned_to}</span></Field>
+                      {displayData.due_date && <Field label="Due date"><span className="text-sm text-[#153543]">{displayData.due_date}</span></Field>}
+                      <Field label="Priority">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                          displayData.priority === 'High' ? 'bg-red-100 text-red-700' :
+                          displayData.priority === 'Low' ? 'bg-green-100 text-green-700' :
+                          'bg-yellow-100 text-yellow-700'
+                        }`}>{displayData.priority}</span>
+                      </Field>
+                      <Field label="Type"><span className="text-sm text-[#153543]">{displayData.type}</span></Field>
+                      {displayData.description && <Field label="Description"><span className="text-sm text-[#153543]/70">{displayData.description}</span></Field>}
+                    </>
+                  )}
                 </>
               )}
             </div>

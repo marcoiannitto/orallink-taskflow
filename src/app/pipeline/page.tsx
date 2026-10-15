@@ -11,7 +11,7 @@ interface Client {
   [key: string]: unknown;
 }
 
-const STAGES = ['Prospect', 'Contacted', 'Meeting Set', 'Pilot', 'Negotiation', 'Signed'];
+const STAGES = ['Exploration', 'MOU', 'Pilot', 'Onboarded', 'Active', 'Inactive'];
 
 export default function PipelinePage() {
   const [clients, setClients] = useState<Client[]>([]);
@@ -37,7 +37,7 @@ export default function PipelinePage() {
 
   const grouped = STAGES.map((stage) => ({
     stage,
-    clients: clients.filter((c) => (c.status || 'Prospect') === stage),
+    clients: clients.filter((c) => (c.status || 'Exploration') === stage),
   }));
 
   // Also collect clients with statuses not in STAGES
