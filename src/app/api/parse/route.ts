@@ -69,10 +69,15 @@ Rules:
       model: 'claude-haiku-5-5',
       max_tokens: 1024,
       system: systemPrompt,
-      messages: [{ role: 'user', content: input }],
+      messages: [
+        { role: 'user', content: input },
+        { role: 'assistant', content: '{' },
+      ],
     });
 
-    const text = message.content[0].type === 'text' ? message.content[0].text : '';
+    const rawText = message.content[0].type === 'text' ? message.content[0].text : '';
+    // Prepend the '{' we used as assistant prefill
+    const text = '{' + rawText;
 
     // Parse JSON from response
     let parsed;
