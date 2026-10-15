@@ -364,6 +364,11 @@ function EditFields({ data, setData }: { data: ParsedResult; setData: (d: Parsed
           <textarea value={data.notes_append || data.description || ''} onChange={(e) => setData({ ...data, notes_append: e.target.value })}
             className="w-full px-2 py-1 border border-[#D1D5DB] rounded text-sm text-[#153543] resize-none" rows={2} />
         </Field>
+        <Field label="Notify">
+          <input value={(data.notify || []).join(', ')} onChange={(e) => setData({ ...data, notify: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) })}
+            className="w-full px-2 py-1 border border-[#D1D5DB] rounded text-sm text-[#153543]"
+            placeholder="e.g. Glenn, Marco" />
+        </Field>
       </>
     );
   }
@@ -392,6 +397,11 @@ function EditFields({ data, setData }: { data: ParsedResult; setData: (d: Parsed
           className="w-full px-2 py-1 border border-[#D1D5DB] rounded text-sm text-[#153543]">
           <option>CRM Follow-up</option><option>Reminder</option><option>To-do</option><option>Other</option>
         </select>
+      </Field>
+      <Field label="Notify">
+        <input value={(data.notify || []).join(', ')} onChange={(e) => setData({ ...data, notify: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) })}
+          className="w-full px-2 py-1 border border-[#D1D5DB] rounded text-sm text-[#153543]"
+          placeholder="e.g. Glenn, Marco" />
       </Field>
     </>
   );
