@@ -74,16 +74,18 @@ Rules:
 
     if (!message.content || message.content.length === 0) {
       return NextResponse.json(
-        { error: 'AI returned empty response', raw: JSON.stringify(message).slice(0, 300) },
+        { error: 'AI returned empty response' },
         { status: 500 }
       );
     }
 
-    let text = message.content[0].type === 'text' ? message.content[0].text : '';
+    // Find the text block (model may return thinking blocks first)
+    const textBlock = message.content.find((b: { type: string }) => b.type === 'text');
+    let text = textBlock && 'text' in textBlock ? (textBlock as { type: string; text: string }).text : '';
 
     if (!text) {
       return NextResponse.json(
-        { error: 'AI returned non-text response', raw: JSON.stringify(message.content[0]).slice(0, 300) },
+        { error: 'AI returned no text content' },
         { status: 500 }
       );
     }
