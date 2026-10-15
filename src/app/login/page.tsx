@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -36,72 +37,88 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#E2F0F6] flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        {/* Logo area */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-[#153543] tracking-wide uppercase"
-              style={{ fontFamily: 'Futura, "Trebuchet MS", Arial, sans-serif' }}>
-            ORAL LINK
-          </h1>
-          <p className="text-sm text-[#153543]/60 mt-1 uppercase tracking-widest"
-             style={{ fontFamily: 'Futura, "Trebuchet MS", Arial, sans-serif' }}>
-            TaskFlow
-          </p>
+    <div className="min-h-screen bg-[#153543] flex items-center justify-center px-4">
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0 opacity-5"
+        style={{ backgroundImage: 'radial-gradient(circle at 25% 25%, #49A3CC 1px, transparent 1px), radial-gradient(circle at 75% 75%, #49A3CC 1px, transparent 1px)', backgroundSize: '48px 48px' }}
+      />
+
+      <div className="w-full max-w-sm relative z-10">
+        {/* Logo */}
+        <div className="text-center mb-10">
+          <Image
+            src="/logo-white.png"
+            alt="OralLink"
+            width={280}
+            height={80}
+            className="mx-auto h-14 w-auto mb-4"
+            priority
+          />
+          <div className="flex items-center justify-center gap-3 mt-3">
+            <div className="h-px w-12 bg-white/20" />
+            <span className="text-xs text-white/50 uppercase tracking-[0.3em] font-semibold">
+              TaskFlow
+            </span>
+            <div className="h-px w-12 bg-white/20" />
+          </div>
         </div>
 
         {/* Login card */}
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          <h2 className="text-lg font-semibold text-[#153543] mb-6 uppercase tracking-wide"
-              style={{ fontFamily: 'Futura, "Trebuchet MS", Arial, sans-serif' }}>
+        <div className="bg-white rounded-2xl shadow-2xl p-8">
+          <h2 className="text-base font-bold text-[#153543] mb-6 uppercase tracking-wider">
             Sign In
           </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-xs text-[#153543]/60 uppercase tracking-wider mb-1"
-                     style={{ fontFamily: 'Futura, "Trebuchet MS", Arial, sans-serif' }}>
+              <label className="block text-[10px] text-[#153543]/50 uppercase tracking-wider mb-1.5 font-semibold">
                 Email
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-[#D1D5DB] bg-[#F7F7F7] text-[#153543] text-sm focus:outline-none focus:ring-2 focus:ring-[#49A3CC] focus:border-transparent"
+                className="w-full px-4 py-3 rounded-lg border border-[#D1D5DB] bg-[#F7F7F7] text-[#153543] text-sm focus:outline-none focus:ring-2 focus:ring-[#49A3CC] focus:border-transparent transition-shadow"
                 placeholder="you@orallink.health"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-xs text-[#153543]/60 uppercase tracking-wider mb-1"
-                     style={{ fontFamily: 'Futura, "Trebuchet MS", Arial, sans-serif' }}>
+              <label className="block text-[10px] text-[#153543]/50 uppercase tracking-wider mb-1.5 font-semibold">
                 Password
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-[#D1D5DB] bg-[#F7F7F7] text-[#153543] text-sm focus:outline-none focus:ring-2 focus:ring-[#49A3CC] focus:border-transparent"
+                className="w-full px-4 py-3 rounded-lg border border-[#D1D5DB] bg-[#F7F7F7] text-[#153543] text-sm focus:outline-none focus:ring-2 focus:ring-[#49A3CC] focus:border-transparent transition-shadow"
                 placeholder="Enter password"
                 required
               />
             </div>
 
             {error && (
-              <p className="text-sm text-[#FF6F59]">{error}</p>
+              <div className="flex items-center gap-2 text-sm text-[#FF6F59] bg-red-50 px-3 py-2 rounded-lg">
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                {error}
+              </div>
             )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-[#FF6F59] text-white font-semibold rounded-lg uppercase tracking-wider text-sm hover:bg-[#e5634f] transition-colors disabled:opacity-50"
-              style={{ fontFamily: 'Futura, "Trebuchet MS", Arial, sans-serif' }}
+              className="w-full py-3 bg-[#49A3CC] text-white font-bold rounded-lg uppercase tracking-wider text-sm hover:bg-[#3d8fb5] transition-all disabled:opacity-50 shadow-md hover:shadow-lg"
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
         </div>
+
+        {/* Footer */}
+        <p className="text-center text-[10px] text-white/30 mt-8 uppercase tracking-wider">
+          Powered by Kells
+        </p>
       </div>
     </div>
   );
