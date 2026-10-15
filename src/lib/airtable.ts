@@ -1,5 +1,5 @@
 import Airtable, { FieldSet } from 'airtable';
-import { AIRTABLE } from './constants';
+import { AIRTABLE, TEAM_MEMBERS } from './constants';
 
 const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
   AIRTABLE.BASE_ID
@@ -36,11 +36,35 @@ export interface ClientRecord {
 
 const F = AIRTABLE.FIELDS;
 
-/** Normalize Airtable multi-select (array), single-select (string), or empty → string[] */
-function normalizeResponsible(val: unknown): string[] {
-  if (Array.isArray(val)) return val.filter((v): v is string => typeof v === 'string');
-  if (typeof val === 'string' && val.trim()) return [val.trim()];
-  return [];
+/**
+ * Resolve the CLIENT_RESPONSIBLE field to team member names.
+ * Linked record fields return an array of record IDs, e.g. ['reccUGXtnEVZUWj6X'].
+ * We match them against TEAM_MEMBERS.recordId to get the name.
+ * Also handles legacy single-string or multi-select (name strings) gracefully.
+ */
+function resolveResponsible(val: unknown): string[] {
+  if (!val) return [];
+  const arr = Array.isArray(val) ? val : [val];
+  return arr
+    .map((v) => {
+      if (typeof v !== 'string') return null;
+      // If it looks like a record ID, resolve to name
+      if (v.startsWith('rec')) {
+        const member = TEAM_MEMBERS.find((m) => m.recordId === v);
+        return member?.name || null;
+      }
+      // Otherwise treat as a name string (legacy/multi-select)
+      return v.trim() || null;
+    })
+    .filter((n): n is string => n !== null);
+}
+
+/** Convert team member names to their Airtable record IDs for linked record writes */
+export function namesToRecordIds(names: string[]): string[] {
+  return names
+    .map((n) => TEAM_MEMBERS.find((m) => m.name.toLowerCase() === n.toLowerCase()))
+    .filter(Boolean)
+    .map((m) => m!.recordId);
 }
 
 export async function getTasks(filterFormula?: string): Promise<TaskRecord[]> {
@@ -86,7 +110,7 @@ export async function getClients(filterFormula?: string): Promise<ClientRecord[]
     id: r.id,
     name: (r.get(F.CLIENT_NAME) as string) || '',
     status: r.get(F.CLIENT_STATUS) as string | undefined,
-    responsible: normalizeResponsible(r.get(F.CLIENT_RESPONSIBLE)),
+    responsible: resolveResponsible(r.get(F.CLIENT_RESPONSIBLE)),
     nextFollowUp: r.get(F.CLIENT_NEXT_FOLLOWUP) as string | undefined,
     notes: r.get(F.CLIENT_NOTES) as string | undefined,
   }));
@@ -109,7 +133,7 @@ export async function getClientById(id: string): Promise<ClientRecord | null> {
       id: r.id,
       name: (r.get(F.CLIENT_NAME) as string) || '',
       status: r.get(F.CLIENT_STATUS) as string | undefined,
-      responsible: normalizeResponsible(r.get(F.CLIENT_RESPONSIBLE)),
+      responsible: resolveResponsible(r.get(F.CLIENT_RESPONSIBLE)),
       nextFollowUp: r.get(F.CLIENT_NEXT_FOLLOWUP) as string | undefined,
       notes: r.get(F.CLIENT_NOTES) as string | undefined,
     };

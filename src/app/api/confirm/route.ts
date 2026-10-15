@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { FieldSet } from 'airtable';
 import { Resend } from 'resend';
 import { getCurrentUser } from '@/lib/auth';
-import { createTask, createClient, updateClient, getClientById } from '@/lib/airtable';
+import { createTask, createClient, updateClient, getClientById, namesToRecordIds } from '@/lib/airtable';
 import { summarizeNextSteps } from '@/lib/ai-summary';
 import { AIRTABLE, TEAM_MEMBERS } from '@/lib/constants';
 
@@ -68,8 +68,9 @@ export async function POST(req: NextRequest) {
       const responsibleNames: string[] = parsed.notify?.length
         ? (parsed.notify as string[])
         : [assignedMember?.name || user.name];
-      // Save as multi-select array on the client record
-      clientFields[F.CLIENT_RESPONSIBLE] = responsibleNames;
+      // Save as linked record IDs on the client record
+      const responsibleIds = namesToRecordIds(responsibleNames);
+      if (responsibleIds.length > 0) clientFields[F.CLIENT_RESPONSIBLE] = responsibleIds;
 
       await createClient(clientFields);
       results.push('Client created');
@@ -140,9 +141,10 @@ export async function POST(req: NextRequest) {
           : newEntry;
       }
 
-      // If notify list is provided, update the stored responsible field too
+      // If notify list is provided, update the stored responsible field too (as linked record IDs)
       if (parsed.notify?.length) {
-        updateFields[F.CLIENT_RESPONSIBLE] = parsed.notify as string[];
+        const notifyIds = namesToRecordIds(parsed.notify as string[]);
+        if (notifyIds.length > 0) updateFields[F.CLIENT_RESPONSIBLE] = notifyIds;
       }
 
       if (Object.keys(updateFields).length > 0) {
