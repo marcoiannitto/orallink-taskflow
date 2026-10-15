@@ -42,8 +42,8 @@ export default function DashboardPage() {
       });
       const data = await res.json();
       if (data.error) {
-        setToast(data.error);
-        setTimeout(() => setToast(''), 3000);
+        setToast(data.error + (data.raw ? ': ' + data.raw.slice(0, 200) : ''));
+        setTimeout(() => setToast(''), 8000);
       } else {
         setParsed(data.parsed);
         setEditData(data.parsed);

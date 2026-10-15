@@ -72,20 +72,30 @@ Rules:
       messages: [{ role: 'user', content: input + '\n\nRespond with ONLY a JSON object, no markdown fences, no explanation.' }],
     });
 
-    const text = message.content[0].type === 'text' ? message.content[0].text : '';
+    let text = message.content[0].type === 'text' ? message.content[0].text : '';
+
+    // Strip markdown code fences if present
+    text = text.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
 
     // Parse JSON from response
     let parsed;
     try {
       parsed = JSON.parse(text);
     } catch {
-      // Try to extract JSON from the response
+      // Try to extract JSON object from the response
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        parsed = JSON.parse(jsonMatch[0]);
+        try {
+          parsed = JSON.parse(jsonMatch[0]);
+        } catch {
+          return NextResponse.json(
+            { error: 'Failed to parse AI response', raw: text.slice(0, 500) },
+            { status: 500 }
+          );
+        }
       } else {
         return NextResponse.json(
-          { error: 'Failed to parse AI response', raw: text },
+          { error: 'Failed to parse AI response', raw: text.slice(0, 500) },
           { status: 500 }
         );
       }
