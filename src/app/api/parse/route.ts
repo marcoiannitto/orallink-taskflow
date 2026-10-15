@@ -12,10 +12,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  const { input } = await req.json();
+  const { input, history } = await req.json();
   if (!input || typeof input !== 'string') {
     return NextResponse.json({ error: 'Input is required' }, { status: 400 });
   }
+
+  // history is an array of { role: 'user'|'assistant', content: string } for multi-turn
+  const conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = Array.isArray(history) ? history : [];
 
   try {
     // Fetch context from Airtable
@@ -24,7 +27,10 @@ export async function POST(req: NextRequest) {
       getTasks(`{Responsible} = "${user.name}"`).catch(() => []),
     ]);
 
-    const clientNames = clients.map((c) => `${c.name} (ID: ${c.id}, Status: ${c.status || 'Unknown'})`).join('\n');
+    const clientNames = clients.map((c) => {
+      const notesSnippet = c.notes ? c.notes.slice(0, 80).replace(/\n/g, ' ') : '';
+      return `${c.name} (ID: ${c.id}, Status: ${c.status || 'Unknown'}${c.nextFollowUp ? ', Follow-up: ' + c.nextFollowUp : ''}${notesSnippet ? ', Notes: ' + notesSnippet + '...' : ''})`;
+    }).join('\n');
     const taskList = recentTasks.slice(0, 10).map((t) => `- ${t.task} (Due: ${t.dueDate || 'none'}, Status: ${t.status || 'Open'})`).join('\n');
     const teamList = TEAM_MEMBERS.map((m) => `${m.name} (${m.role})`).join(', ');
 
@@ -75,11 +81,18 @@ Rules:
 - If assigning to someone, match to the team list above.
 - Return ONLY the JSON object, no markdown, no explanation.`;
 
+    // Build messages: include conversation history for multi-turn clarifications
+    const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+    for (const msg of conversationHistory) {
+      messages.push({ role: msg.role, content: msg.content });
+    }
+    messages.push({ role: 'user', content: input + '\n\nRespond with ONLY a JSON object, no markdown fences, no explanation.' });
+
     const message = await anthropic.messages.create({
       model: 'claude-haiku-5-5',
       max_tokens: 1024,
       system: systemPrompt,
-      messages: [{ role: 'user', content: input + '\n\nRespond with ONLY a JSON object, no markdown fences, no explanation.' }],
+      messages,
     });
 
     if (!message.content || message.content.length === 0) {
@@ -127,7 +140,7 @@ Rules:
       }
     }
 
-    return NextResponse.json({ parsed, sourceInput: input });
+    return NextResponse.json({ parsed, sourceInput: input, aiRawText: text });
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);
     console.error('Parse error:', errMsg);
