@@ -39,6 +39,7 @@ const F = AIRTABLE.FIELDS;
 export async function getTasks(filterFormula?: string): Promise<TaskRecord[]> {
   const options: Record<string, unknown> = {
     sort: [{ field: F.TASK_DUE_DATE, direction: 'asc' }],
+    returnFieldsByFieldId: true,
   };
   if (filterFormula) options.filterByFormula = filterFormula;
 
@@ -68,7 +69,9 @@ export async function updateTask(id: string, fields: Partial<FieldSet>) {
 }
 
 export async function getClients(filterFormula?: string): Promise<ClientRecord[]> {
-  const options: Record<string, unknown> = {};
+  const options: Record<string, unknown> = {
+    returnFieldsByFieldId: true,
+  };
   if (filterFormula) options.filterByFormula = filterFormula;
 
   const records = await clientsTable.select(options as Airtable.SelectOptions<FieldSet>).all();
@@ -97,7 +100,6 @@ export async function getTasksDueSoon(): Promise<TaskRecord[]> {
 }
 
 export async function getClientsDueFollowUp(): Promise<ClientRecord[]> {
-  const today = new Date().toISOString().split('T')[0];
   return getClients(
     `AND(IS_BEFORE({${F.CLIENT_NEXT_FOLLOWUP}}, DATEADD(TODAY(), 1, 'days')), {${F.CLIENT_NEXT_FOLLOWUP}} != BLANK(), {${F.CLIENT_STATUS}} != 'Inactive')`
   );

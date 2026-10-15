@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { getCurrentUser } from '@/lib/auth';
 import { getClients, getTasks } from '@/lib/airtable';
-import { TEAM_MEMBERS } from '@/lib/constants';
+import { AIRTABLE, TEAM_MEMBERS } from '@/lib/constants';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     // Fetch context from Airtable
     const [clients, recentTasks] = await Promise.all([
       getClients(),
-      getTasks(`{Responsible} = "${user.name}"`).catch(() => []),
+      getTasks(`{${AIRTABLE.FIELDS.TASK_RESPONSIBLE}} = "${user.name}"`).catch(() => []),
     ]);
 
     const clientNames = clients.map((c) => {
