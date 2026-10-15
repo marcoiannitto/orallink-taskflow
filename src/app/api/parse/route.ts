@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     // Fetch context from Airtable
     const [clients, recentTasks] = await Promise.all([
       getClients(),
-      getTasks(`{${user.name}} = {Responsible}`).catch(() => []),
+      getTasks(`{Responsible} = "${user.name}"`).catch(() => []),
     ]);
 
     const clientNames = clients.map((c) => `${c.name} (ID: ${c.id}, Status: ${c.status || 'Unknown'})`).join('\n');
@@ -93,9 +93,10 @@ Rules:
 
     return NextResponse.json({ parsed, sourceInput: input });
   } catch (error) {
-    console.error('Parse error:', error);
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error('Parse error:', errMsg);
     return NextResponse.json(
-      { error: 'Failed to process input' },
+      { error: `Failed to process input: ${errMsg}` },
       { status: 500 }
     );
   }
