@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { href: '/dashboard', label: 'Input' },
   { href: '/tasks', label: 'Tasks' },
   { href: '/pipeline', label: 'Pipeline' },
+  { href: '/activity', label: 'Activity' },
 ];
 
 export default function NavBar() {

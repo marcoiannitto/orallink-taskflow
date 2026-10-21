@@ -4,6 +4,7 @@ import { Resend } from 'resend';
 import { getCurrentUser } from '@/lib/auth';
 import { createTask, createClient, updateClient, getClientById, namesToRecordIds } from '@/lib/airtable';
 import { summarizeNextSteps } from '@/lib/ai-summary';
+import { logActivity } from '@/lib/activity';
 import { AIRTABLE, TEAM_MEMBERS } from '@/lib/constants';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -42,6 +43,12 @@ export async function POST(req: NextRequest) {
 
       await createTask(taskFields);
       results.push('Task created');
+      logActivity({
+        user: user.name,
+        action: 'create_task',
+        entityName: parsed.title || 'Untitled task',
+        details: `Assigned to ${parsed.assigned_to || user.name}${parsed.due_date ? `, due ${parsed.due_date}` : ''}`,
+      });
     }
 
     // Create new client
@@ -74,6 +81,12 @@ export async function POST(req: NextRequest) {
 
       await createClient(clientFields);
       results.push('Client created');
+      logActivity({
+        user: user.name,
+        action: 'create_client',
+        entityName: parsed.client_name || parsed.title || 'Unnamed client',
+        details: `Status: ${parsed.status_update || 'Exploration'}${parsed.contact_name ? `, Contact: ${parsed.contact_name}` : ''}`,
+      });
 
       // Send email notification
       const clientName = parsed.client_name || parsed.title;
@@ -153,6 +166,18 @@ export async function POST(req: NextRequest) {
       if (Object.keys(updateFields).length > 0) {
         await updateClient(parsed.client_match, updateFields);
         results.push('Client updated');
+
+        const changesList: string[] = [];
+        if (parsed.status_update) changesList.push(`Status → ${parsed.status_update}`);
+        if (parsed.due_date) changesList.push(`Follow-up → ${parsed.due_date}`);
+        if (parsed.notes_append) changesList.push('Notes updated');
+        if (parsed.contact_name) changesList.push(`Contact: ${parsed.contact_name}`);
+        logActivity({
+          user: user.name,
+          action: 'update_client',
+          entityName: parsed.client_name || parsed.title || 'Unknown client',
+          details: changesList.join(', ') || 'Fields updated',
+        });
 
         // Send email notification on update
         const clientName = parsed.client_name || parsed.title;
