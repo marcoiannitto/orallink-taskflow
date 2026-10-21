@@ -82,7 +82,7 @@ export async function getTasks(filterFormula?: string): Promise<TaskRecord[]> {
     id: r.id,
     task: (r.get(F.TASK) as string) || '',
     clientId: r.get(F.TASK_CLIENTS) as string[] | undefined,
-    responsible: r.get(F.TASK_RESPONSIBLE) as string | undefined,
+    responsible: resolveResponsible(r.get(F.TASK_RESPONSIBLE)).join(', ') || undefined,
     dueDate: r.get(F.TASK_DUE_DATE) as string | undefined,
     status: r.get(F.TASK_STATUS) as string | undefined,
     priority: r.get(F.TASK_PRIORITY) as string | undefined,

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { getTasks, updateTask } from '@/lib/airtable';
-import { AIRTABLE } from '@/lib/constants';
+import { AIRTABLE, hasPermission } from '@/lib/constants';
+import type { PermissionLevel } from '@/lib/constants';
 
 const F = AIRTABLE.FIELDS;
 
@@ -13,7 +14,21 @@ export async function GET() {
 
   try {
     const tasks = await getTasks();
-    return NextResponse.json({ tasks });
+
+    // Admins see all tasks; others see only tasks assigned to them
+    const userPermission: PermissionLevel = user.permission || 'member';
+    const isAdmin = hasPermission(userPermission, 'admin');
+
+    const visibleTasks = isAdmin
+      ? tasks
+      : tasks.filter((t) => {
+          if (!t.responsible) return false;
+          // responsible is a comma-separated string of names (resolved from linked records)
+          const names = t.responsible.split(',').map((n) => n.trim().toLowerCase());
+          return names.includes(user.name.toLowerCase());
+        });
+
+    return NextResponse.json({ tasks: visibleTasks, isAdmin });
   } catch (error) {
     console.error('Tasks fetch error:', error);
     return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 });

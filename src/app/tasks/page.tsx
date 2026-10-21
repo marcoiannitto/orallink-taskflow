@@ -20,6 +20,7 @@ export default function TasksPage() {
   const [filter, setFilter] = useState<'all' | 'mine'>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [userName, setUserName] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -35,6 +36,7 @@ export default function TasksPage() {
       const res = await fetch('/api/tasks');
       const data = await res.json();
       setTasks(data.tasks || []);
+      setIsAdmin(data.isAdmin || false);
     } catch {
       console.error('Failed to fetch tasks');
     } finally {
@@ -75,14 +77,16 @@ export default function TasksPage() {
         <div className="flex items-center justify-between mb-5">
           <h1 className="text-lg font-bold text-[#153543] uppercase tracking-[0.15em]">Tasks</h1>
           <div className="flex gap-2">
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value as 'all' | 'mine')}
-              className="text-xs px-3 py-1.5 rounded-lg border border-[#D1D5DB] bg-white text-[#153543] font-semibold focus:outline-none focus:ring-2 focus:ring-[#49A3CC]"
-            >
-              <option value="all">All</option>
-              <option value="mine">My Tasks</option>
-            </select>
+            {isAdmin && (
+              <select
+                value={filter}
+                onChange={(e) => setFilter(e.target.value as 'all' | 'mine')}
+                className="text-xs px-3 py-1.5 rounded-lg border border-[#D1D5DB] bg-white text-[#153543] font-semibold focus:outline-none focus:ring-2 focus:ring-[#49A3CC]"
+              >
+                <option value="all">All</option>
+                <option value="mine">My Tasks</option>
+              </select>
+            )}
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
