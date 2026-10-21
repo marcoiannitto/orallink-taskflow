@@ -8,7 +8,12 @@ import { logActivity } from '@/lib/activity';
 import { newClientEmail, clientUpdatedEmail } from '@/lib/email-templates';
 import { AIRTABLE, TEAM_MEMBERS } from '@/lib/constants';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy-init to avoid build-time error when RESEND_API_KEY isn't set
+let _resend: Resend | null = null;
+function getResend() {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY);
+  return _resend;
+}
 const F = AIRTABLE.FIELDS;
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'taskflow@orallink.health';
 
@@ -113,7 +118,7 @@ export async function POST(req: NextRequest) {
           : 'Not set';
 
         try {
-          await resend.emails.send({
+          await getResend().emails.send({
             from: FROM_EMAIL,
             to: recipients.map((m) => m!.email),
             subject: `New Client Added: ${clientName}`,
@@ -210,7 +215,7 @@ export async function POST(req: NextRequest) {
           if (rawNotes) changes.push('Notes updated');
 
           try {
-            await resend.emails.send({
+            await getResend().emails.send({
               from: FROM_EMAIL,
               to: recipients.map((m) => m!.email),
               subject: `Client Updated: ${clientName}`,

@@ -1,13 +1,20 @@
 import Airtable, { FieldSet } from 'airtable';
 import { AIRTABLE, TEAM_MEMBERS } from './constants';
 
-const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
-  AIRTABLE.BASE_ID
-);
+// Lazy-init to avoid build-time error when AIRTABLE_API_KEY isn't set
+let _base: ReturnType<InstanceType<typeof Airtable>['base']> | null = null;
+function getBase() {
+  if (!_base) {
+    _base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
+      AIRTABLE.BASE_ID
+    );
+  }
+  return _base;
+}
 
-export const tasksTable = base(AIRTABLE.TABLES.TASKS);
-export const clientsTable = base(AIRTABLE.TABLES.CLIENTS);
-export const teamTable = base(AIRTABLE.TABLES.TEAM);
+export const tasksTable = () => getBase()(AIRTABLE.TABLES.TASKS);
+export const clientsTable = () => getBase()(AIRTABLE.TABLES.CLIENTS);
+export const teamTable = () => getBase()(AIRTABLE.TABLES.TEAM);
 
 export interface TaskRecord {
   id: string;
@@ -77,7 +84,7 @@ export async function getTasks(filterFormula?: string): Promise<TaskRecord[]> {
   };
   if (filterFormula) options.filterByFormula = filterFormula;
 
-  const records = await tasksTable.select(options as Airtable.SelectOptions<FieldSet>).all();
+  const records = await tasksTable().select(options as Airtable.SelectOptions<FieldSet>).all();
   return records.map((r) => ({
     id: r.id,
     task: (r.get(F.TASK) as string) || '',
@@ -95,11 +102,11 @@ export async function getTasks(filterFormula?: string): Promise<TaskRecord[]> {
 }
 
 export async function createTask(fields: Partial<FieldSet>) {
-  return tasksTable.create([{ fields }]);
+  return tasksTable().create([{ fields }]);
 }
 
 export async function updateTask(id: string, fields: Partial<FieldSet>) {
-  return tasksTable.update(id, fields);
+  return tasksTable().update(id, fields);
 }
 
 export async function getClients(filterFormula?: string): Promise<ClientRecord[]> {
@@ -108,7 +115,7 @@ export async function getClients(filterFormula?: string): Promise<ClientRecord[]
   };
   if (filterFormula) options.filterByFormula = filterFormula;
 
-  const records = await clientsTable.select(options as Airtable.SelectOptions<FieldSet>).all();
+  const records = await clientsTable().select(options as Airtable.SelectOptions<FieldSet>).all();
   return records.map((r) => ({
     id: r.id,
     name: (r.get(F.CLIENT_NAME) as string) || '',
@@ -123,12 +130,12 @@ export async function getClients(filterFormula?: string): Promise<ClientRecord[]
 }
 
 export async function createClient(fields: Partial<FieldSet>) {
-  return clientsTable.create([{ fields }]);
+  return clientsTable().create([{ fields }]);
 }
 
 export async function getClientById(id: string): Promise<ClientRecord | null> {
   try {
-    const records = await clientsTable.select({
+    const records = await clientsTable().select({
       returnFieldsByFieldId: true,
       filterByFormula: `RECORD_ID() = '${id}'`,
       maxRecords: 1,
@@ -152,7 +159,7 @@ export async function getClientById(id: string): Promise<ClientRecord | null> {
 }
 
 export async function updateClient(id: string, fields: Partial<FieldSet>) {
-  return clientsTable.update(id, fields);
+  return clientsTable().update(id, fields);
 }
 
 export async function getTasksDueSoon(): Promise<TaskRecord[]> {

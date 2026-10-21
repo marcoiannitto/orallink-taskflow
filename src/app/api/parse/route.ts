@@ -4,7 +4,11 @@ import { getCurrentUser } from '@/lib/auth';
 import { getClients, getTasks, getClientById } from '@/lib/airtable';
 import { AIRTABLE, TEAM_MEMBERS } from '@/lib/constants';
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+let _anthropic: Anthropic | null = null;
+function getAnthropic() {
+  if (!_anthropic) _anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  return _anthropic;
+}
 
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
@@ -89,7 +93,7 @@ Rules:
     }
     messages.push({ role: 'user', content: input + '\n\nRespond with ONLY a JSON object, no markdown fences, no explanation.' });
 
-    const message = await anthropic.messages.create({
+    const message = await getAnthropic().messages.create({
       model: 'claude-haiku-5-5',
       max_tokens: 1024,
       system: systemPrompt,

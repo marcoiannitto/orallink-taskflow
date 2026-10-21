@@ -1,10 +1,14 @@
 import Anthropic from '@anthropic-ai/sdk';
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+let _anthropic: Anthropic | null = null;
+function getAnthropic() {
+  if (!_anthropic) _anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  return _anthropic;
+}
 
 export async function summarizeNextSteps(clientName: string, notes: string, status?: string): Promise<string> {
   try {
-    const message = await anthropic.messages.create({
+    const message = await getAnthropic().messages.create({
       model: 'claude-haiku-5-5',
       max_tokens: 256,
       system: `You are a concise CRM assistant. Given client notes, write 2-3 bullet points summarizing the immediate next steps. Keep it actionable and brief. No markdown fences, just plain text with bullet points (use • character).`,

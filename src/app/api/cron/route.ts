@@ -5,7 +5,11 @@ import { summarizeNextSteps } from '@/lib/ai-summary';
 import { taskReminderEmail, clientFollowUpEmail } from '@/lib/email-templates';
 import { AIRTABLE, TEAM_MEMBERS } from '@/lib/constants';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend: Resend | null = null;
+function getResend() {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY);
+  return _resend;
+}
 const F = AIRTABLE.FIELDS;
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'taskflow@orallink.health';
 
@@ -29,7 +33,7 @@ export async function GET(req: NextRequest) {
       if (!member) continue;
 
       try {
-        await resend.emails.send({
+        await getResend().emails.send({
           from: FROM_EMAIL,
           to: member.email,
           subject: `TaskFlow Reminder: ${task.task}`,
@@ -69,7 +73,7 @@ export async function GET(req: NextRequest) {
           ? new Date(client.nextFollowUp).toLocaleDateString('en-SG', { weekday: 'short', day: 'numeric', month: 'short' })
           : 'Today';
 
-        await resend.emails.send({
+        await getResend().emails.send({
           from: FROM_EMAIL,
           to: members.map((m) => m!.email),
           subject: `Client Follow-up: ${client.name}`,
