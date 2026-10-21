@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const filterUser = url.searchParams.get('user') || undefined;
   const filterAction = url.searchParams.get('action') || undefined;
-  const limit = parseInt(url.searchParams.get('limit') || '50', 10);
+  const limit = Math.min(Math.max(parseInt(url.searchParams.get('limit') || '50', 10) || 50, 1), 200);
 
   try {
     const entries = await getActivityLog({ limit, user: filterUser, action: filterAction });

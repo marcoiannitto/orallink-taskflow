@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { getTasksDueSoon, updateTask, getClientsDueFollowUp, updateClient } from '@/lib/airtable';
 import { summarizeNextSteps } from '@/lib/ai-summary';
+import { taskReminderEmail, clientFollowUpEmail } from '@/lib/email-templates';
 import { AIRTABLE, TEAM_MEMBERS } from '@/lib/constants';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -32,19 +33,14 @@ export async function GET(req: NextRequest) {
           from: FROM_EMAIL,
           to: member.email,
           subject: `TaskFlow Reminder: ${task.task}`,
-          html: `
-            <div style="font-family: 'Trebuchet MS', Arial, sans-serif; max-width: 480px; margin: 0 auto;">
-              <div style="background: #153543; color: white; padding: 16px 20px; border-radius: 12px 12px 0 0;">
-                <h2 style="margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">TaskFlow Reminder</h2>
-              </div>
-              <div style="background: white; border: 1px solid #D1D5DB; border-top: 0; padding: 20px; border-radius: 0 0 12px 12px;">
-                <h3 style="color: #153543; margin: 0 0 8px;">${task.task}</h3>
-                ${task.dueDate ? `<p style="color: #FF6F59; font-size: 14px; margin: 0 0 4px;">Due: ${new Date(task.dueDate).toLocaleDateString('en-SG', { weekday: 'short', day: 'numeric', month: 'short' })}</p>` : ''}
-                ${task.priority ? `<p style="font-size: 13px; color: #666;">Priority: ${task.priority}</p>` : ''}
-                ${task.description ? `<p style="font-size: 13px; color: #666;">${task.description}</p>` : ''}
-              </div>
-            </div>
-          `,
+          html: taskReminderEmail({
+            taskName: task.task,
+            dueDate: task.dueDate
+              ? new Date(task.dueDate).toLocaleDateString('en-SG', { weekday: 'short', day: 'numeric', month: 'short' })
+              : undefined,
+            priority: task.priority,
+            description: task.description,
+          }),
         });
 
         await updateTask(task.id, { [F.TASK_NOTIFICATION_SENT]: true });
@@ -77,21 +73,12 @@ export async function GET(req: NextRequest) {
           from: FROM_EMAIL,
           to: members.map((m) => m!.email),
           subject: `Client Follow-up: ${client.name}`,
-          html: `
-            <div style="font-family: 'Trebuchet MS', Arial, sans-serif; max-width: 480px; margin: 0 auto;">
-              <div style="background: #153543; color: white; padding: 16px 20px; border-radius: 12px 12px 0 0;">
-                <h2 style="margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">Client Follow-up</h2>
-              </div>
-              <div style="background: white; border: 1px solid #D1D5DB; border-top: 0; padding: 20px; border-radius: 0 0 12px 12px;">
-                <h3 style="color: #153543; margin: 0 0 4px;">${client.name}</h3>
-                <p style="color: #49A3CC; font-size: 13px; margin: 0 0 12px;">Status: ${client.status || 'Exploration'} · Follow-up: ${followUpDate}</p>
-                <div style="background: #F7F7F7; border-radius: 8px; padding: 12px; margin: 0;">
-                  <p style="font-size: 12px; color: #153543; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 6px;">Next Steps</p>
-                  <p style="font-size: 14px; color: #153543; margin: 0; white-space: pre-line;">${nextSteps}</p>
-                </div>
-              </div>
-            </div>
-          `,
+          html: clientFollowUpEmail({
+            clientName: client.name,
+            status: client.status || 'Exploration',
+            followUpDate,
+            nextSteps,
+          }),
         });
 
         results.push(`Follow-up reminder sent to ${members.map((m) => m!.name).join(', ')}: ${client.name}`);

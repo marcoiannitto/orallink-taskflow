@@ -5,6 +5,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { createTask, createClient, updateClient, getClientById, namesToRecordIds } from '@/lib/airtable';
 import { summarizeNextSteps } from '@/lib/ai-summary';
 import { logActivity } from '@/lib/activity';
+import { newClientEmail, clientUpdatedEmail } from '@/lib/email-templates';
 import { AIRTABLE, TEAM_MEMBERS } from '@/lib/constants';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -18,6 +19,10 @@ export async function POST(req: NextRequest) {
   }
 
   const { parsed, sourceInput } = await req.json();
+
+  if (!parsed?.intent) {
+    return NextResponse.json({ error: 'Invalid payload: missing intent' }, { status: 400 });
+  }
 
   try {
     const results: string[] = [];
@@ -112,22 +117,14 @@ export async function POST(req: NextRequest) {
             from: FROM_EMAIL,
             to: recipients.map((m) => m!.email),
             subject: `New Client Added: ${clientName}`,
-            html: `
-              <div style="font-family: 'Trebuchet MS', Arial, sans-serif; max-width: 480px; margin: 0 auto;">
-                <div style="background: #153543; color: white; padding: 16px 20px; border-radius: 12px 12px 0 0;">
-                  <h2 style="margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">New Client Added</h2>
-                </div>
-                <div style="background: white; border: 1px solid #D1D5DB; border-top: 0; padding: 20px; border-radius: 0 0 12px 12px;">
-                  <h3 style="color: #153543; margin: 0 0 4px;">${clientName}</h3>
-                  <p style="color: #49A3CC; font-size: 13px; margin: 0 0 12px;">Status: ${parsed.status_update || 'Exploration'} · Follow-up: ${followUpDate}</p>
-                  ${parsed.contact_name ? `<p style="font-size: 13px; color: #666; margin: 0 0 4px;">Contact: ${parsed.contact_name}${parsed.contact_email ? ` (${parsed.contact_email})` : ''}</p>` : ''}
-                  <div style="background: #F7F7F7; border-radius: 8px; padding: 12px; margin: 12px 0 0;">
-                    <p style="font-size: 12px; color: #153543; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 6px;">Next Steps</p>
-                    <p style="font-size: 14px; color: #153543; margin: 0; white-space: pre-line;">${nextSteps}</p>
-                  </div>
-                </div>
-              </div>
-            `,
+            html: newClientEmail({
+              clientName,
+              status: parsed.status_update || 'Exploration',
+              followUpDate,
+              contactName: parsed.contact_name,
+              contactEmail: parsed.contact_email,
+              nextSteps,
+            }),
           });
           results.push(`Email sent to ${recipients.map((m) => m!.name).join(', ')}`);
         } catch (emailError) {
@@ -146,12 +143,14 @@ export async function POST(req: NextRequest) {
       if (parsed.contact_email) updateFields[F.CLIENT_CONTACT_EMAIL] = parsed.contact_email;
       if (parsed.client_type) updateFields[F.CLIENT_TYPE] = parsed.client_type;
 
+      // Fetch client once — reused for notes append and email recipients below
+      const existingClient = await getClientById(parsed.client_match);
+
       // Append notes with datestamp, never replace
       if (parsed.notes_append) {
-        const existing = await getClientById(parsed.client_match);
         const dateStamp = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' });
         const newEntry = `${dateStamp} - ${parsed.notes_append}`;
-        const existingNotes = existing?.notes?.trim() || '';
+        const existingNotes = existingClient?.notes?.trim() || '';
         updateFields[F.CLIENT_NOTES] = existingNotes
           ? `${newEntry}\n${existingNotes}`
           : newEntry;
@@ -183,8 +182,7 @@ export async function POST(req: NextRequest) {
         const clientName = parsed.client_name || parsed.title;
         const rawNotes = parsed.notes_append || '';
 
-        // Read the client's stored responsible list as default recipients
-        const existingClient = await getClientById(parsed.client_match);
+        // Use the client fetched above for recipient lookup
         const storedResponsible = existingClient?.responsible || [];
 
         // Priority: explicit notify (even if empty = no email) → stored responsible list → current user
@@ -216,23 +214,11 @@ export async function POST(req: NextRequest) {
               from: FROM_EMAIL,
               to: recipients.map((m) => m!.email),
               subject: `Client Updated: ${clientName}`,
-              html: `
-                <div style="font-family: 'Trebuchet MS', Arial, sans-serif; max-width: 480px; margin: 0 auto;">
-                  <div style="background: #153543; color: white; padding: 16px 20px; border-radius: 12px 12px 0 0;">
-                    <h2 style="margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">Client Updated</h2>
-                  </div>
-                  <div style="background: white; border: 1px solid #D1D5DB; border-top: 0; padding: 20px; border-radius: 0 0 12px 12px;">
-                    <h3 style="color: #153543; margin: 0 0 4px;">${clientName}</h3>
-                    <p style="color: #49A3CC; font-size: 13px; margin: 0 0 12px;">${changes.join(' · ')}</p>
-                    ${nextSteps ? `
-                    <div style="background: #F7F7F7; border-radius: 8px; padding: 12px; margin: 0;">
-                      <p style="font-size: 12px; color: #153543; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 6px;">Next Steps</p>
-                      <p style="font-size: 14px; color: #153543; margin: 0; white-space: pre-line;">${nextSteps}</p>
-                    </div>
-                    ` : ''}
-                  </div>
-                </div>
-              `,
+              html: clientUpdatedEmail({
+                clientName,
+                changesSummary: changes.join(' · '),
+                nextSteps,
+              }),
             });
             results.push(`Email sent to ${recipients.map((m) => m!.name).join(', ')}`);
           } catch (emailError) {

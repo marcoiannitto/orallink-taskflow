@@ -14,6 +14,11 @@ function getTableId(): string {
   return process.env.AIRTABLE_ACTIVITY_TABLE_ID || '';
 }
 
+/** Escape a string for use inside an Airtable formula (prevent injection) */
+function escapeFormula(val: string): string {
+  return val.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
 export interface ActivityEntry {
   id: string;
   timestamp: string;
@@ -73,10 +78,10 @@ export async function getActivityLog(options?: {
 
   const filters: string[] = [];
   if (options?.user) {
-    filters.push(`{User} = "${options.user}"`);
+    filters.push(`{User} = "${escapeFormula(options.user)}"`);
   }
   if (options?.action) {
-    filters.push(`{Action} = "${options.action}"`);
+    filters.push(`{Action} = "${escapeFormula(options.action)}"`);
   }
   if (filters.length > 0) {
     queryOpts.filterByFormula =
