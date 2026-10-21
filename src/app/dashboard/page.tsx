@@ -123,7 +123,7 @@ export default function DashboardPage() {
       const res = await fetch('/api/confirm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ parsed: editing ? editData : pendingParsed, sourceInput }),
+        body: JSON.stringify({ parsed: editData ?? pendingParsed, sourceInput }),
       });
       const data = await res.json();
       if (data.ok) {

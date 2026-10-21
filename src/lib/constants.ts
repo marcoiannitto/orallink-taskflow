@@ -12,7 +12,7 @@ export const COLORS = {
 
 // Airtable IDs
 export const AIRTABLE = {
-  BASE_ID: 'appS0SeEmjrtNYcIG',
+  BASE_ID: process.env.AIRTABLE_BASE_ID || 'appS0SeEmjrtNYcIG',
   TABLES: {
     CLIENTS: 'tbl4yCDp1KnCSGHZM',
     TASKS: 'tbldt0lsrKzPJBt6i',

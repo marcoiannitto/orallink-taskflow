@@ -64,8 +64,8 @@ export async function POST(req: NextRequest) {
       if (parsed.contact_name) clientFields[F.CLIENT_CONTACT_NAME] = parsed.contact_name;
       if (parsed.client_type) clientFields[F.CLIENT_TYPE] = parsed.client_type;
 
-      // Build the responsible list: notify names → assigned person → current user
-      const responsibleNames: string[] = parsed.notify?.length
+      // Build the responsible list: explicit notify (even if empty) → assigned person → current user
+      const responsibleNames: string[] = Array.isArray(parsed.notify)
         ? (parsed.notify as string[])
         : [assignedMember?.name || user.name];
       // Save as linked record IDs on the client record
@@ -137,7 +137,7 @@ export async function POST(req: NextRequest) {
         const newEntry = `${dateStamp} - ${parsed.notes_append}`;
         const existingNotes = existing?.notes?.trim() || '';
         updateFields[F.CLIENT_NOTES] = existingNotes
-          ? `${existingNotes}\n${newEntry}`
+          ? `${newEntry}\n${existingNotes}`
           : newEntry;
       }
 
@@ -159,8 +159,8 @@ export async function POST(req: NextRequest) {
         const existingClient = await getClientById(parsed.client_match);
         const storedResponsible = existingClient?.responsible || [];
 
-        // Priority: explicit notify → stored responsible list → assigned person → current user
-        const notifyNames: string[] = parsed.notify?.length
+        // Priority: explicit notify (even if empty = no email) → stored responsible list → current user
+        const notifyNames: string[] = Array.isArray(parsed.notify)
           ? (parsed.notify as string[])
           : storedResponsible.length > 0
             ? storedResponsible
