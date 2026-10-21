@@ -60,6 +60,21 @@ export const AIRTABLE = {
   },
 } as const;
 
+/**
+ * Field NAMES for use in Airtable filterByFormula strings.
+ * filterByFormula always requires field names, NOT field IDs.
+ * (returnFieldsByFieldId only affects r.get() return values, not formula parsing.)
+ */
+export const FIELD_NAMES = {
+  // Tasks
+  TASK_DUE_DATE: 'Due Date',
+  TASK_NOTIFICATION_SENT: 'Notification Sent',
+  TASK_STATUS: 'Status',
+  // Clients
+  CLIENT_NEXT_FOLLOWUP: 'Next Follow-up',
+  CLIENT_STATUS: 'Status',
+} as const;
+
 // Permission levels (highest to lowest)
 export type PermissionLevel = 'admin' | 'member' | 'intern';
 

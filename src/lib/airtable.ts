@@ -156,13 +156,16 @@ export async function updateClient(id: string, fields: Partial<FieldSet>) {
 }
 
 export async function getTasksDueSoon(): Promise<TaskRecord[]> {
+  // filterByFormula requires field NAMES, not field IDs
+  // (returnFieldsByFieldId only affects r.get() return values)
   return getTasks(
-    `AND(IS_BEFORE({${F.TASK_DUE_DATE}}, DATEADD(NOW(), 1, 'hours')), {${F.TASK_NOTIFICATION_SENT}} = FALSE(), {${F.TASK_STATUS}} != 'Done')`
+    `AND(IS_BEFORE({Due Date}, DATEADD(NOW(), 1, 'hours')), {Notification Sent} = FALSE(), {Status} != 'Done')`
   );
 }
 
 export async function getClientsDueFollowUp(): Promise<ClientRecord[]> {
+  // filterByFormula requires field NAMES, not field IDs
   return getClients(
-    `AND(IS_BEFORE({${F.CLIENT_NEXT_FOLLOWUP}}, DATEADD(TODAY(), 1, 'days')), {${F.CLIENT_NEXT_FOLLOWUP}} != BLANK(), {${F.CLIENT_STATUS}} != 'Inactive')`
+    `AND(IS_BEFORE({Next Follow-up}, DATEADD(TODAY(), 1, 'days')), {Next Follow-up} != BLANK(), {Status} != 'Inactive')`
   );
 }
