@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { getCurrentUser } from '@/lib/auth';
-import { getClients, getTasks } from '@/lib/airtable';
+import { getClients, getTasks, getClientById } from '@/lib/airtable';
 import { AIRTABLE, TEAM_MEMBERS } from '@/lib/constants';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -141,7 +141,13 @@ Rules:
       }
     }
 
-    return NextResponse.json({ parsed, sourceInput: input, aiRawText: text });
+    // If updating an existing client, fetch full record for the confirmation card
+    let existingClient = null;
+    if (parsed.client_match && parsed.intent === 'update_client') {
+      existingClient = await getClientById(parsed.client_match);
+    }
+
+    return NextResponse.json({ parsed, sourceInput: input, aiRawText: text, existingClient });
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);
     console.error('Parse error:', errMsg);

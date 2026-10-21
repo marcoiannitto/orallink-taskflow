@@ -23,6 +23,18 @@ interface ParsedResult {
   notify: string[];
 }
 
+interface ExistingClient {
+  id: string;
+  name: string;
+  status?: string;
+  responsible: string[];
+  nextFollowUp?: string;
+  notes?: string;
+  contactName?: string;
+  contactEmail?: string;
+  clientType?: string;
+}
+
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -40,6 +52,7 @@ export default function DashboardPage() {
   const [toast, setToast] = useState('');
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState<ParsedResult | null>(null);
+  const [existingClient, setExistingClient] = useState<ExistingClient | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -102,7 +115,22 @@ export default function DashboardPage() {
             aiRawText,
           }]);
           setPendingParsed(parsed);
-          setEditData(parsed);
+          // Merge existing client data into editData so the card shows full context
+          const ec = data.existingClient as ExistingClient | null;
+          setExistingClient(ec || null);
+          if (ec && parsed.intent === 'update_client') {
+            setEditData({
+              ...parsed,
+              client_name: parsed.client_name || ec.name,
+              contact_name: parsed.contact_name || ec.contactName || null,
+              contact_email: parsed.contact_email || ec.contactEmail || null,
+              client_type: parsed.client_type || ec.clientType || null,
+              status_update: parsed.status_update || ec.status || null,
+              notify: parsed.notify?.length ? parsed.notify : ec.responsible,
+            });
+          } else {
+            setEditData(parsed);
+          }
           setSourceInput(data.sourceInput);
         }
       }
@@ -131,6 +159,7 @@ export default function DashboardPage() {
         setMessages((prev) => [...prev, { role: 'assistant', content: `Done! ${resultText}.` }]);
         setPendingParsed(null);
         setEditData(null);
+        setExistingClient(null);
         setEditing(false);
         setToast('Saved!');
       } else {
@@ -147,6 +176,7 @@ export default function DashboardPage() {
   function handleDiscard() {
     setPendingParsed(null);
     setEditData(null);
+    setExistingClient(null);
     setEditing(false);
     setMessages((prev) => [...prev, { role: 'assistant', content: 'Discarded. What else?' }]);
   }
@@ -217,9 +247,9 @@ export default function DashboardPage() {
 
                   <div className="p-4 space-y-3">
                     {editing ? (
-                      <EditFields data={editData!} setData={setEditData} />
+                      <EditFields data={editData!} setData={setEditData} existingClient={existingClient} />
                     ) : (
-                      <ViewFields data={displayData} />
+                      <ViewFields data={displayData} existingClient={existingClient} />
                     )}
                   </div>
 
@@ -312,28 +342,46 @@ export default function DashboardPage() {
   );
 }
 
-function ViewFields({ data }: { data: ParsedResult }) {
+function ViewFields({ data, existingClient }: { data: ParsedResult; existingClient: ExistingClient | null }) {
+  const ec = existingClient;
   if (data.intent === 'create_client' || data.intent === 'update_client') {
+    const contactName = data.contact_name || ec?.contactName;
+    const contactEmail = data.contact_email || ec?.contactEmail;
+    const clientType = data.client_type || ec?.clientType;
+    const responsible = data.notify?.length ? data.notify : ec?.responsible || [];
     return (
       <>
-        <Field label="Client"><span className="text-sm font-semibold text-[#153543]">{data.client_name}</span></Field>
-        {data.contact_name && <Field label="Contact"><span className="text-sm text-[#153543]">{data.contact_name}</span></Field>}
-        {data.contact_email && <Field label="Email"><span className="text-sm text-[#153543]">{data.contact_email}</span></Field>}
+        <Field label="Client"><span className="text-sm font-semibold text-[#153543]">{data.client_name || ec?.name}</span></Field>
+        {clientType && <Field label="Type"><span className="text-sm text-[#153543]">{clientType}</span></Field>}
+        {contactName && <Field label="Contact"><span className="text-sm text-[#153543]">{contactName}</span></Field>}
+        {contactEmail && <Field label="Email"><span className="text-sm text-[#153543]">{contactEmail}</span></Field>}
         <Field label="Status">
-          <StatusBadge status={data.status_update || 'Exploration'} />
+          <StatusBadge status={data.status_update || ec?.status || 'Exploration'} />
         </Field>
-        {data.due_date && <Field label="Follow-up"><span className="text-sm text-[#153543]">{data.due_date}</span></Field>}
-        <Field label="Assigned to"><span className="text-sm text-[#153543]">{data.assigned_to}</span></Field>
-        {(data.notes_append || data.description) && (
-          <Field label="Notes"><span className="text-sm text-[#153543]/60 italic">{data.notes_append || data.description}</span></Field>
+        {(data.due_date || ec?.nextFollowUp) && (
+          <Field label="Follow-up"><span className="text-sm text-[#153543]">{data.due_date || ec?.nextFollowUp}</span></Field>
         )}
-        {data.notify && data.notify.length > 0 && (
-          <Field label="Notify">
+        {responsible.length > 0 && (
+          <Field label="OL Reference">
             <div className="flex flex-wrap gap-1">
-              {data.notify.map((n) => (
+              {responsible.map((n) => (
                 <span key={n} className="text-xs px-2 py-0.5 bg-[#E2F0F6] text-[#153543] rounded-full font-medium">{n}</span>
               ))}
             </div>
+          </Field>
+        )}
+        {/* Existing notes (read-only context) */}
+        {ec?.notes && data.intent === 'update_client' && (
+          <Field label="Existing notes">
+            <div className="text-xs text-[#153543]/50 max-h-24 overflow-y-auto whitespace-pre-line leading-relaxed border border-[#E5E7EB] rounded-lg p-2 bg-[#F9FAFB]">
+              {ec.notes}
+            </div>
+          </Field>
+        )}
+        {/* New note to append */}
+        {(data.notes_append || data.description) && (
+          <Field label="New note">
+            <span className="text-sm text-[#49A3CC] font-medium">{data.notes_append || data.description}</span>
           </Field>
         )}
       </>
@@ -367,13 +415,21 @@ function ViewFields({ data }: { data: ParsedResult }) {
   );
 }
 
-function EditFields({ data, setData }: { data: ParsedResult; setData: (d: ParsedResult) => void }) {
+function EditFields({ data, setData, existingClient }: { data: ParsedResult; setData: (d: ParsedResult) => void; existingClient: ExistingClient | null }) {
   const inputClass = "w-full px-3 py-1.5 border border-[#D1D5DB] rounded-lg text-sm text-[#153543] bg-[#F9FAFB] focus:outline-none focus:ring-2 focus:ring-[#49A3CC] focus:border-transparent transition-shadow";
+  const ec = existingClient;
   if (data.intent === 'create_client' || data.intent === 'update_client') {
     return (
       <>
         <Field label="Client name">
           <input value={data.client_name || ''} onChange={(e) => setData({ ...data, client_name: e.target.value })} className={inputClass} />
+        </Field>
+        <Field label="Client type">
+          <select value={data.client_type || ''} onChange={(e) => setData({ ...data, client_type: e.target.value || null })} className={inputClass}>
+            <option value="">Not set</option>
+            <option>Corporate</option><option>AAC/Nursing Home</option><option>Distributor</option>
+            <option>API Distributor</option><option>SME</option><option>Insurance</option><option>Government</option>
+          </select>
         </Field>
         <Field label="Contact">
           <input value={data.contact_name || ''} onChange={(e) => setData({ ...data, contact_name: e.target.value })} className={inputClass} />
@@ -390,16 +446,21 @@ function EditFields({ data, setData }: { data: ParsedResult; setData: (d: Parsed
         <Field label="Follow-up">
           <input type="date" value={data.due_date || ''} onChange={(e) => setData({ ...data, due_date: e.target.value })} className={inputClass} />
         </Field>
-        <Field label="Assigned to">
-          <input value={data.assigned_to || ''} onChange={(e) => setData({ ...data, assigned_to: e.target.value })} className={inputClass} />
-        </Field>
-        <Field label="Notes">
-          <textarea value={data.notes_append || data.description || ''} onChange={(e) => setData({ ...data, notes_append: e.target.value })}
-            className={`${inputClass} resize-none`} rows={2} />
-        </Field>
-        <Field label="Notify">
+        <Field label="OL Reference">
           <input value={(data.notify || []).join(', ')} onChange={(e) => setData({ ...data, notify: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) })}
             className={inputClass} placeholder="e.g. Glenn, Marco" />
+        </Field>
+        {/* Existing notes (read-only context) */}
+        {ec?.notes && data.intent === 'update_client' && (
+          <Field label="Existing notes">
+            <div className="text-xs text-[#153543]/50 max-h-24 overflow-y-auto whitespace-pre-line leading-relaxed border border-[#E5E7EB] rounded-lg p-2 bg-[#F9FAFB]">
+              {ec.notes}
+            </div>
+          </Field>
+        )}
+        <Field label="New note">
+          <textarea value={data.notes_append || data.description || ''} onChange={(e) => setData({ ...data, notes_append: e.target.value })}
+            className={`${inputClass} resize-none`} rows={2} />
         </Field>
       </>
     );

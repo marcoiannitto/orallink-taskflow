@@ -129,6 +129,9 @@ export async function POST(req: NextRequest) {
       const updateFields: Partial<FieldSet> = {};
       if (parsed.status_update) updateFields[F.CLIENT_STATUS] = parsed.status_update;
       if (parsed.due_date) updateFields[F.CLIENT_NEXT_FOLLOWUP] = parsed.due_date;
+      if (parsed.contact_name) updateFields[F.CLIENT_CONTACT_NAME] = parsed.contact_name;
+      if (parsed.contact_email) updateFields[F.CLIENT_CONTACT_EMAIL] = parsed.contact_email;
+      if (parsed.client_type) updateFields[F.CLIENT_TYPE] = parsed.client_type;
 
       // Append notes with datestamp, never replace
       if (parsed.notes_append) {

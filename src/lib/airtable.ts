@@ -31,6 +31,9 @@ export interface ClientRecord {
   responsible: string[];
   nextFollowUp?: string;
   notes?: string;
+  contactName?: string;
+  contactEmail?: string;
+  clientType?: string;
   [key: string]: unknown;
 }
 
@@ -113,6 +116,9 @@ export async function getClients(filterFormula?: string): Promise<ClientRecord[]
     responsible: resolveResponsible(r.get(F.CLIENT_RESPONSIBLE)),
     nextFollowUp: r.get(F.CLIENT_NEXT_FOLLOWUP) as string | undefined,
     notes: r.get(F.CLIENT_NOTES) as string | undefined,
+    contactName: r.get(F.CLIENT_CONTACT_NAME) as string | undefined,
+    contactEmail: r.get(F.CLIENT_CONTACT_EMAIL) as string | undefined,
+    clientType: r.get(F.CLIENT_TYPE) as string | undefined,
   }));
 }
 
@@ -136,6 +142,9 @@ export async function getClientById(id: string): Promise<ClientRecord | null> {
       responsible: resolveResponsible(r.get(F.CLIENT_RESPONSIBLE)),
       nextFollowUp: r.get(F.CLIENT_NEXT_FOLLOWUP) as string | undefined,
       notes: r.get(F.CLIENT_NOTES) as string | undefined,
+      contactName: r.get(F.CLIENT_CONTACT_NAME) as string | undefined,
+      contactEmail: r.get(F.CLIENT_CONTACT_EMAIL) as string | undefined,
+      clientType: r.get(F.CLIENT_TYPE) as string | undefined,
     };
   } catch {
     return null;
