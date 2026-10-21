@@ -45,8 +45,8 @@ export default function SettingsPage() {
           <h2 className="text-sm font-semibold text-[#153543] mb-3">Role Permissions</h2>
           <div className="space-y-2">
             {[
-              { level: 'Admin', desc: 'Full access: settings, table setup, all actions', who: 'Glenn, Marco, Gerald' },
-              { level: 'Member', desc: 'Create and update clients, tasks, view activity', who: 'Jeremy' },
+              { level: 'Admin', desc: 'Full access: settings, table setup, all actions', who: 'Marco' },
+              { level: 'Member', desc: 'Create and update clients, tasks, view activity', who: 'Glenn, Gerald, Jeremy' },
               { level: 'Intern', desc: 'Create and update clients, tasks, view activity', who: 'Matthew, Yee Kai' },
             ].map((r) => (
               <div key={r.level} className="flex items-start gap-3 py-2 border-b border-[#D1D5DB]/30 last:border-0">

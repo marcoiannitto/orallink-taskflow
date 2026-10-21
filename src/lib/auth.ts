@@ -18,8 +18,8 @@ export function authenticateUser(email: string, password: string): TeamMember | 
   const member = TEAM_MEMBERS.find(
     (m) => m.email.toLowerCase() === email.toLowerCase()
   );
-  // Simple password: orallink2026
-  if (member && password === 'orallink2026') {
+  // Simple shared password
+  if (member && password === 'OralLink123!@') {
     return member;
   }
   return null;
@@ -76,8 +76,6 @@ export async function requireRole(
 
 /** Infer permission from role string (for old JWTs minted before this change) */
 function inferPermission(role: string): PermissionLevel {
-  const lower = role.toLowerCase();
-  if (['ceo', 'coo'].includes(lower)) return 'admin';
-  if (lower === 'intern') return 'intern';
+  if (role.toLowerCase() === 'intern') return 'intern';
   return 'member';
 }

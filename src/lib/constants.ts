@@ -78,8 +78,8 @@ export function hasPermission(userLevel: PermissionLevel, required: PermissionLe
 export const TEAM_MEMBERS = [
   { name: 'Marco', role: 'COO', permission: 'admin' as PermissionLevel, email: 'marco@orallink.health', recordId: 'reccUGXtnEVZUWj6X' },
   { name: 'Jeremy', role: 'CFO', permission: 'member' as PermissionLevel, email: 'jeremy@orallink.health', recordId: 'rec6dRcjDvG5l1WTg' },
-  { name: 'Glenn', role: 'CEO', permission: 'admin' as PermissionLevel, email: 'glenn@orallink.health', recordId: 'recBToP1ZSFnooWIL' },
-  { name: 'Gerald', role: 'COO', permission: 'admin' as PermissionLevel, email: 'gerald@orallink.health', recordId: 'rec1TBtic3r5086Oq' },
+  { name: 'Glenn', role: 'CEO', permission: 'member' as PermissionLevel, email: 'glenn@orallink.health', recordId: 'recBToP1ZSFnooWIL' },
+  { name: 'Gerald', role: 'COO', permission: 'member' as PermissionLevel, email: 'gerald@orallink.health', recordId: 'rec1TBtic3r5086Oq' },
   { name: 'Matthew', role: 'Intern', permission: 'intern' as PermissionLevel, email: 'matthew@orallink.health', recordId: 'recdYW5szjOfXWSKH' },
   { name: 'Yee Kai', role: 'Intern', permission: 'intern' as PermissionLevel, email: 'yeekai@orallink.health', recordId: 'recCwwb5ou2nBZ4wW' },
 ] as const;
