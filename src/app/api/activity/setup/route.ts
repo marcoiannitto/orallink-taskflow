@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { requireRole } from '@/lib/auth';
 import { createActivityTable } from '@/lib/activity';
 
 export async function POST() {
-  const user = await getCurrentUser();
-  if (!user) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-  }
+  const result = await requireRole('admin');
+  if (result instanceof NextResponse) return result;
 
   // Only allow setup if table ID isn't already configured
   if (process.env.AIRTABLE_ACTIVITY_TABLE_ID) {

@@ -1,13 +1,16 @@
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
-import { TEAM_MEMBERS, JWT_SECRET } from './constants';
+import { NextResponse } from 'next/server';
+import { TEAM_MEMBERS, JWT_SECRET, hasPermission } from './constants';
+import type { PermissionLevel } from './constants';
 
 export type TeamMember = (typeof TEAM_MEMBERS)[number];
 
-interface JWTPayload {
+export interface JWTPayload {
   email: string;
   name: string;
   role: string;
+  permission: PermissionLevel;
   recordId: string;
 }
 
@@ -28,6 +31,7 @@ export function createToken(member: TeamMember): string {
       email: member.email,
       name: member.name,
       role: member.role,
+      permission: member.permission,
       recordId: member.recordId,
     } satisfies JWTPayload,
     JWT_SECRET,
@@ -48,4 +52,32 @@ export async function getCurrentUser(): Promise<JWTPayload | null> {
   const token = cookieStore.get('token')?.value;
   if (!token) return null;
   return verifyToken(token);
+}
+
+/**
+ * Check if the current user meets the required permission level.
+ * Returns the user if authorized, or a 401/403 NextResponse if not.
+ */
+export async function requireRole(
+  required: PermissionLevel
+): Promise<JWTPayload | NextResponse> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+  // Backcompat: old JWTs without permission field default based on role
+  const userPermission: PermissionLevel =
+    user.permission || inferPermission(user.role);
+  if (!hasPermission(userPermission, required)) {
+    return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+  }
+  return user;
+}
+
+/** Infer permission from role string (for old JWTs minted before this change) */
+function inferPermission(role: string): PermissionLevel {
+  const lower = role.toLowerCase();
+  if (['ceo', 'coo'].includes(lower)) return 'admin';
+  if (lower === 'intern') return 'intern';
+  return 'member';
 }

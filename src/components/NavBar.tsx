@@ -5,17 +5,32 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-const NAV_ITEMS = [
+type PermissionLevel = 'admin' | 'member' | 'intern';
+
+interface NavItem {
+  href: string;
+  label: string;
+  minPermission?: PermissionLevel;
+}
+
+const NAV_ITEMS: NavItem[] = [
   { href: '/dashboard', label: 'Input' },
   { href: '/tasks', label: 'Tasks' },
   { href: '/pipeline', label: 'Pipeline' },
   { href: '/activity', label: 'Activity' },
+  { href: '/settings', label: 'Settings', minPermission: 'admin' },
 ];
+
+const PERMISSION_RANK: Record<PermissionLevel, number> = {
+  admin: 3,
+  member: 2,
+  intern: 1,
+};
 
 export default function NavBar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = useState<{ name: string; role: string } | null>(null);
+  const [user, setUser] = useState<{ name: string; role: string; permission: PermissionLevel } | null>(null);
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -46,7 +61,11 @@ export default function NavBar() {
           </Link>
           <div className="h-8 w-px bg-white/20" />
           <div className="flex gap-0.5">
-            {NAV_ITEMS.map((item) => (
+            {NAV_ITEMS.filter((item) => {
+              if (!item.minPermission) return true;
+              if (!user) return false;
+              return PERMISSION_RANK[user.permission || 'member'] >= PERMISSION_RANK[item.minPermission];
+            }).map((item) => (
               <Link
                 key={item.href}
                 href={item.href}

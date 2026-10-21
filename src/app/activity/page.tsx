@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import NavBar from '@/components/NavBar';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 interface ActivityEntry {
   id: string;
@@ -47,6 +48,7 @@ function formatTimestamp(isoString: string): string {
 }
 
 export default function ActivityPage() {
+  const { hasPermission } = useCurrentUser();
   const [entries, setEntries] = useState<ActivityEntry[]>([]);
   const [teamNames, setTeamNames] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -146,18 +148,23 @@ export default function ActivityPage() {
           </select>
         </div>
 
-        {/* Setup prompt */}
+        {/* Setup prompt (admin only) */}
         {setupNeeded && !loading && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
             <p className="text-sm text-amber-800 mb-2">
-              Activity logging needs a table in Airtable. You can set it up automatically or create it manually.
+              Activity logging needs a table in Airtable.
+              {hasPermission('admin')
+                ? ' You can set it up automatically or create it manually.'
+                : ' Ask an admin to set it up.'}
             </p>
-            <button
-              onClick={handleSetup}
-              className="text-xs font-semibold text-white bg-[#153543] px-4 py-2 rounded-lg hover:bg-[#153543]/90 transition-colors"
-            >
-              Create Activity Log Table
-            </button>
+            {hasPermission('admin') && (
+              <button
+                onClick={handleSetup}
+                className="text-xs font-semibold text-white bg-[#153543] px-4 py-2 rounded-lg hover:bg-[#153543]/90 transition-colors"
+              >
+                Create Activity Log Table
+              </button>
+            )}
           </div>
         )}
 

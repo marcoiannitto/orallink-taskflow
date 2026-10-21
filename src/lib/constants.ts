@@ -60,14 +60,28 @@ export const AIRTABLE = {
   },
 } as const;
 
+// Permission levels (highest to lowest)
+export type PermissionLevel = 'admin' | 'member' | 'intern';
+
+const PERMISSION_HIERARCHY: Record<PermissionLevel, number> = {
+  admin: 3,
+  member: 2,
+  intern: 1,
+};
+
+/** Check if a permission level meets the required minimum */
+export function hasPermission(userLevel: PermissionLevel, required: PermissionLevel): boolean {
+  return PERMISSION_HIERARCHY[userLevel] >= PERMISSION_HIERARCHY[required];
+}
+
 // Team members for auth
 export const TEAM_MEMBERS = [
-  { name: 'Marco', role: 'COO', email: 'marco@orallink.health', recordId: 'reccUGXtnEVZUWj6X' },
-  { name: 'Jeremy', role: 'CFO', email: 'jeremy@orallink.health', recordId: 'rec6dRcjDvG5l1WTg' },
-  { name: 'Glenn', role: 'CEO', email: 'glenn@orallink.health', recordId: 'recBToP1ZSFnooWIL' },
-  { name: 'Gerald', role: 'COO', email: 'gerald@orallink.health', recordId: 'rec1TBtic3r5086Oq' },
-  { name: 'Matthew', role: 'Intern', email: 'matthew@orallink.health', recordId: 'recdYW5szjOfXWSKH' },
-  { name: 'Yee Kai', role: 'Intern', email: 'yeekai@orallink.health', recordId: 'recCwwb5ou2nBZ4wW' },
+  { name: 'Marco', role: 'COO', permission: 'admin' as PermissionLevel, email: 'marco@orallink.health', recordId: 'reccUGXtnEVZUWj6X' },
+  { name: 'Jeremy', role: 'CFO', permission: 'member' as PermissionLevel, email: 'jeremy@orallink.health', recordId: 'rec6dRcjDvG5l1WTg' },
+  { name: 'Glenn', role: 'CEO', permission: 'admin' as PermissionLevel, email: 'glenn@orallink.health', recordId: 'recBToP1ZSFnooWIL' },
+  { name: 'Gerald', role: 'COO', permission: 'admin' as PermissionLevel, email: 'gerald@orallink.health', recordId: 'rec1TBtic3r5086Oq' },
+  { name: 'Matthew', role: 'Intern', permission: 'intern' as PermissionLevel, email: 'matthew@orallink.health', recordId: 'recdYW5szjOfXWSKH' },
+  { name: 'Yee Kai', role: 'Intern', permission: 'intern' as PermissionLevel, email: 'yeekai@orallink.health', recordId: 'recCwwb5ou2nBZ4wW' },
 ] as const;
 
 export const JWT_SECRET = process.env.JWT_SECRET || 'orallink-taskflow-dev-secret';
