@@ -5,7 +5,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { createTask, createClient, updateClient, getClientById, namesToRecordIds } from '@/lib/airtable';
 import { summarizeNextSteps } from '@/lib/ai-summary';
 import { logActivity } from '@/lib/activity';
-import { newClientEmail, clientUpdatedEmail } from '@/lib/email-templates';
+import { newClientEmail, clientUpdatedEmail, taskAssignedEmail } from '@/lib/email-templates';
 import { AIRTABLE, TEAM_MEMBERS } from '@/lib/constants';
 
 // Lazy-init to avoid build-time error when RESEND_API_KEY isn't set
@@ -59,6 +59,32 @@ export async function POST(req: NextRequest) {
         entityName: parsed.title || 'Untitled task',
         details: `Assigned to ${parsed.assigned_to || user.name}${parsed.due_date ? `, due ${parsed.due_date}` : ''}`,
       });
+
+      // Email the assignee about the new task
+      if (assignedMember && process.env.RESEND_API_KEY) {
+        const dueFormatted = parsed.due_date
+          ? new Date(parsed.due_date).toLocaleDateString('en-SG', { weekday: 'short', day: 'numeric', month: 'short' })
+          : undefined;
+        try {
+          await getResend().emails.send({
+            from: FROM_EMAIL,
+            to: assignedMember.email,
+            subject: `New Task: ${parsed.title}`,
+            html: taskAssignedEmail({
+              taskName: parsed.title,
+              assignedBy: user.name,
+              dueDate: dueFormatted,
+              priority: parsed.priority,
+              description: parsed.description,
+              clientName: parsed.client_name,
+            }),
+          });
+          results.push(`Email sent to ${assignedMember.name}`);
+        } catch (emailError) {
+          console.error('Task email error:', emailError);
+          results.push('Task created but email failed');
+        }
+      }
     }
 
     // Create new client

@@ -166,7 +166,7 @@ export async function getTasksDueSoon(): Promise<TaskRecord[]> {
   // filterByFormula requires field NAMES, not field IDs
   // (returnFieldsByFieldId only affects r.get() return values)
   return getTasks(
-    `AND(IS_BEFORE({Due Date}, DATEADD(NOW(), 1, 'hours')), {Notification Sent} = FALSE(), {Status} != 'Done')`
+    `AND(IS_BEFORE({Due Date}, DATEADD(NOW(), 1, 'days')), {Status} != 'Done')`
   );
 }
 

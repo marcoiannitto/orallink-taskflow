@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
-import { getTasksDueSoon, updateTask, getClientsDueFollowUp, updateClient } from '@/lib/airtable';
+import { getTasksDueSoon, getClientsDueFollowUp } from '@/lib/airtable';
 import { summarizeNextSteps } from '@/lib/ai-summary';
 import { taskReminderEmail, clientFollowUpEmail } from '@/lib/email-templates';
-import { AIRTABLE, TEAM_MEMBERS } from '@/lib/constants';
+import { TEAM_MEMBERS } from '@/lib/constants';
 
 let _resend: Resend | null = null;
 function getResend() {
   if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY);
   return _resend;
 }
-const F = AIRTABLE.FIELDS;
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'taskflow@orallink.health';
 
 export async function GET(req: NextRequest) {
@@ -47,7 +46,6 @@ export async function GET(req: NextRequest) {
           }),
         });
 
-        await updateTask(task.id, { [F.TASK_NOTIFICATION_SENT]: true });
         results.push(`Task reminder sent to ${member.name}: ${task.task}`);
       } catch (emailError) {
         console.error(`Failed to notify ${member.name}:`, emailError);

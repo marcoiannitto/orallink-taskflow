@@ -60,6 +60,56 @@ export function clientUpdatedEmail(opts: {
   `);
 }
 
+/** Task assigned notification */
+export function taskAssignedEmail(opts: {
+  taskName: string;
+  assignedBy: string;
+  dueDate?: string;
+  priority?: string;
+  description?: string;
+  clientName?: string;
+}): string {
+  const due = opts.dueDate
+    ? `<p style="color: #49A3CC; font-size: 13px; margin: 0 0 4px;">Due: ${opts.dueDate}</p>`
+    : '';
+  const priority = opts.priority
+    ? `<p style="font-size: 13px; color: #666; margin: 0 0 4px;">Priority: ${opts.priority}</p>`
+    : '';
+  const client = opts.clientName
+    ? `<p style="font-size: 13px; color: #666; margin: 0 0 4px;">Client: ${opts.clientName}</p>`
+    : '';
+  const desc = opts.description
+    ? `<div style="background: #F7F7F7; border-radius: 8px; padding: 12px; margin: 12px 0 0;"><p style="font-size: 13px; color: #153543; margin: 0;">${opts.description}</p></div>`
+    : '';
+
+  return wrap('New Task Assigned', `
+    <h3 style="color: #153543; margin: 0 0 8px;">${opts.taskName}</h3>
+    <p style="font-size: 13px; color: #666; margin: 0 0 4px;">Assigned by ${opts.assignedBy}</p>
+    ${due}${priority}${client}${desc}
+  `);
+}
+
+/** Task reassigned notification */
+export function taskReassignedEmail(opts: {
+  taskName: string;
+  reassignedBy: string;
+  dueDate?: string;
+  priority?: string;
+}): string {
+  const due = opts.dueDate
+    ? `<p style="color: #49A3CC; font-size: 13px; margin: 0 0 4px;">Due: ${opts.dueDate}</p>`
+    : '';
+  const priority = opts.priority
+    ? `<p style="font-size: 13px; color: #666;">Priority: ${opts.priority}</p>`
+    : '';
+
+  return wrap('Task Reassigned to You', `
+    <h3 style="color: #153543; margin: 0 0 8px;">${opts.taskName}</h3>
+    <p style="font-size: 13px; color: #666; margin: 0 0 4px;">Reassigned by ${opts.reassignedBy}</p>
+    ${due}${priority}
+  `);
+}
+
 /** Task reminder notification */
 export function taskReminderEmail(opts: {
   taskName: string;

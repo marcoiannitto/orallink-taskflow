@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Resend } from 'resend';
 import { getCurrentUser } from '@/lib/auth';
 import { getTasks, updateTask, namesToRecordIds } from '@/lib/airtable';
 import { AIRTABLE, TEAM_MEMBERS, hasPermission } from '@/lib/constants';
 import type { PermissionLevel } from '@/lib/constants';
 import { logActivity } from '@/lib/activity';
+import { taskReassignedEmail } from '@/lib/email-templates';
+
+let _resend: Resend | null = null;
+function getResend() {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY);
+  return _resend;
+}
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'taskflow@orallink.health';
 
 const F = AIRTABLE.FIELDS;
 
@@ -94,6 +103,37 @@ export async function PATCH(req: NextRequest) {
       entityName: (updates.task as string) || 'Task',
       details: `Updated: ${changedFields.join(', ')}`,
     });
+
+    // Email the new assignee when task is reassigned
+    if (changedFields.includes('responsible') && process.env.RESEND_API_KEY) {
+      const newResponsible = typeof updates.responsible === 'string'
+        ? updates.responsible.split(',').map((n: string) => n.trim()).filter(Boolean)
+        : Array.isArray(updates.responsible) ? updates.responsible as string[] : [];
+      const newMembers = newResponsible
+        .map((n: string) => TEAM_MEMBERS.find((m) => m.name.toLowerCase() === n.toLowerCase()))
+        .filter(Boolean);
+
+      for (const member of newMembers) {
+        if (!member || member.name === user.name) continue; // Don't email yourself
+        try {
+          await getResend().emails.send({
+            from: FROM_EMAIL,
+            to: member.email,
+            subject: `Task Reassigned: ${(updates.task as string) || 'Task'}`,
+            html: taskReassignedEmail({
+              taskName: (updates.task as string) || 'Task',
+              reassignedBy: user.name,
+              dueDate: updates.dueDate
+                ? new Date(updates.dueDate as string).toLocaleDateString('en-SG', { weekday: 'short', day: 'numeric', month: 'short' })
+                : undefined,
+              priority: updates.priority as string | undefined,
+            }),
+          });
+        } catch (emailError) {
+          console.error(`Failed to email reassignment to ${member.name}:`, emailError);
+        }
+      }
+    }
 
     return NextResponse.json({ ok: true });
   } catch (error) {

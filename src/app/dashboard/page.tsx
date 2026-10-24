@@ -370,6 +370,19 @@ function ViewFields({ data, existingClient }: { data: ParsedResult; existingClie
             </div>
           </Field>
         )}
+        <Field label="Notify">
+          <div className="flex items-center gap-2">
+            <svg className="w-3.5 h-3.5 text-[#49A3CC] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            <div className="flex flex-wrap gap-1">
+              {(responsible.length > 0 ? responsible : [data.assigned_to || 'Unknown']).map((n) => (
+                <span key={n} className="text-xs px-2 py-0.5 bg-[#49A3CC]/10 text-[#49A3CC] rounded-full font-medium">{n}</span>
+              ))}
+            </div>
+            <span className="text-[10px] text-[#153543]/30 italic">email</span>
+          </div>
+        </Field>
         {/* Existing notes (read-only context) */}
         {ec?.notes && data.intent === 'update_client' && (
           <Field label="Existing notes">
@@ -402,15 +415,19 @@ function ViewFields({ data, existingClient }: { data: ParsedResult; existingClie
       </Field>
       <Field label="Type"><span className="text-sm text-[#153543]">{data.type}</span></Field>
       {data.description && <Field label="Description"><span className="text-sm text-[#153543]/60 italic">{data.description}</span></Field>}
-      {data.notify && data.notify.length > 0 && (
-        <Field label="Notify">
+      <Field label="Notify">
+        <div className="flex items-center gap-2">
+          <svg className="w-3.5 h-3.5 text-[#49A3CC] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
           <div className="flex flex-wrap gap-1">
-            {data.notify.map((n) => (
-              <span key={n} className="text-xs px-2 py-0.5 bg-[#E2F0F6] text-[#153543] rounded-full font-medium">{n}</span>
+            {(data.notify && data.notify.length > 0 ? data.notify : [data.assigned_to || 'Unknown']).map((n) => (
+              <span key={n} className="text-xs px-2 py-0.5 bg-[#49A3CC]/10 text-[#49A3CC] rounded-full font-medium">{n}</span>
             ))}
           </div>
-        </Field>
-      )}
+          <span className="text-[10px] text-[#153543]/30 italic">email</span>
+        </div>
+      </Field>
     </>
   );
 }
@@ -450,6 +467,9 @@ function EditFields({ data, setData, existingClient }: { data: ParsedResult; set
           <input value={(data.notify || []).join(', ')} onChange={(e) => setData({ ...data, notify: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) })}
             className={inputClass} placeholder="e.g. Glenn, Marco" />
         </Field>
+        <Field label="Notify">
+          <NotifyCheckboxes selected={data.notify || []} onChange={(names) => setData({ ...data, notify: names })} />
+        </Field>
         {/* Existing notes (read-only context) */}
         {ec?.notes && data.intent === 'update_client' && (
           <Field label="Existing notes">
@@ -487,10 +507,47 @@ function EditFields({ data, setData, existingClient }: { data: ParsedResult; set
         </select>
       </Field>
       <Field label="Notify">
-        <input value={(data.notify || []).join(', ')} onChange={(e) => setData({ ...data, notify: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) })}
-          className={inputClass} placeholder="e.g. Glenn, Marco" />
+        <NotifyCheckboxes selected={data.notify?.length ? data.notify : [data.assigned_to || '']} onChange={(names) => setData({ ...data, notify: names })} />
       </Field>
     </>
+  );
+}
+
+const TEAM_NAMES = ['Marco', 'Jeremy', 'Glenn', 'Gerald', 'Matthew', 'Yee Kai'];
+
+function NotifyCheckboxes({ selected, onChange }: { selected: string[]; onChange: (names: string[]) => void }) {
+  const toggle = (name: string) => {
+    if (selected.includes(name)) {
+      onChange(selected.filter((n) => n !== name));
+    } else {
+      onChange([...selected, name]);
+    }
+  };
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {TEAM_NAMES.map((name) => {
+        const active = selected.includes(name);
+        return (
+          <button
+            key={name}
+            type="button"
+            onClick={() => toggle(name)}
+            className={`text-xs px-2.5 py-1 rounded-full font-medium transition-all flex items-center gap-1 ${
+              active
+                ? 'bg-[#49A3CC] text-white shadow-sm'
+                : 'bg-[#F3F4F6] text-[#153543]/40 hover:bg-[#E5E7EB]'
+            }`}
+          >
+            {active && (
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+            {name}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
