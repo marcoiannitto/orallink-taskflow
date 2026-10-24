@@ -83,8 +83,9 @@ export async function PATCH(req: NextRequest) {
         fields[F.TASK_RESPONSIBLE] = namesToRecordIds(names as string[]);
         changedFields.push('responsible');
       } else if (key in EDITABLE_FIELDS) {
-        // Clear field if value is empty string
-        fields[EDITABLE_FIELDS[key]] = value === '' ? undefined : value;
+        // Skip empty strings (no-op), set null to clear, otherwise set value
+        if (value === '') continue;
+        fields[EDITABLE_FIELDS[key]] = value === null ? null : value;
         changedFields.push(key);
       }
       // Silently ignore unknown fields

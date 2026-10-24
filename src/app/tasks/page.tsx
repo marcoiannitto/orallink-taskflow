@@ -29,6 +29,7 @@ export default function TasksPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<Task>>({});
   const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState('');
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -76,20 +77,32 @@ export default function TasksPage() {
     if (!editingId) return;
     setSaving(true);
     try {
+      // Only send fields that have a non-empty value to avoid clearing fields unintentionally
+      const payload: Record<string, unknown> = { id: editingId };
+      for (const [key, value] of Object.entries(editData)) {
+        if (value !== undefined && value !== '') {
+          payload[key] = value;
+        }
+      }
       const res = await fetch('/api/tasks', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: editingId, ...editData }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
         setEditingId(null);
         setEditData({});
+        setToast('Saved!');
         await fetchTasks();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setToast(data.error || 'Failed to save');
       }
     } catch {
-      console.error('Failed to save task');
+      setToast('Failed to save');
     } finally {
       setSaving(false);
+      setTimeout(() => setToast(''), 3000);
     }
   }, [editingId, editData]);
 
@@ -343,6 +356,13 @@ export default function TasksPage() {
           </div>
         )}
       </main>
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 bg-[#153543] text-white text-sm font-medium rounded-full shadow-lg animate-[fadeIn_0.2s]">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }
