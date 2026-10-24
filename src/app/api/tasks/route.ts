@@ -95,6 +95,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
     }
 
+    console.log('Task PATCH fields:', JSON.stringify(fields));
     await updateTask(id, fields as Parameters<typeof updateTask>[1]);
 
     // Log the edit to activity
@@ -137,9 +138,11 @@ export async function PATCH(req: NextRequest) {
     }
 
     return NextResponse.json({ ok: true });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Task update error:', error);
-    const msg = error instanceof Error ? error.message : 'Failed to update task';
-    return NextResponse.json({ error: msg }, { status: 500 });
+    // Airtable SDK errors have .message and sometimes .statusCode / .error
+    const err = error as Record<string, unknown>;
+    const msg = err?.message || err?.error || (typeof error === 'string' ? error : 'Unknown error');
+    return NextResponse.json({ error: String(msg) }, { status: 500 });
   }
 }
