@@ -139,6 +139,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('Task update error:', error);
-    return NextResponse.json({ error: 'Failed to update task' }, { status: 500 });
+    const msg = error instanceof Error ? error.message : 'Failed to update task';
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
