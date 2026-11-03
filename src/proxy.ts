@@ -4,8 +4,8 @@ export function proxy(req: NextRequest) {
   const token = req.cookies.get('token')?.value;
   const { pathname } = req.nextUrl;
 
-  // Allow login page and API auth routes
-  if (pathname === '/login' || pathname.startsWith('/api/auth')) {
+  // Allow login page, API auth routes, and cron endpoint (uses its own bearer token)
+  if (pathname === '/login' || pathname.startsWith('/api/auth') || pathname === '/api/cron') {
     // If already logged in and visiting /login, redirect to dashboard
     if (pathname === '/login' && token) {
       return NextResponse.redirect(new URL('/dashboard', req.url));
