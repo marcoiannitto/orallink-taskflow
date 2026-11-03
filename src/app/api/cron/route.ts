@@ -26,15 +26,21 @@ export async function GET(req: NextRequest) {
     ]);
     const results: string[] = [];
 
-    // Task reminders
+    // Task reminders — notify ALL responsible people
     for (const task of tasks) {
-      const member = TEAM_MEMBERS.find((m) => m.name === task.responsible);
-      if (!member) continue;
+      const responsibleNames = (task.responsible || '')
+        .split(',')
+        .map((n) => n.trim())
+        .filter(Boolean);
+      const members = responsibleNames
+        .map((name) => TEAM_MEMBERS.find((m) => m.name.toLowerCase() === name.toLowerCase()))
+        .filter(Boolean);
+      if (members.length === 0) continue;
 
       try {
         await getResend().emails.send({
           from: FROM_EMAIL,
-          to: member.email,
+          to: members.map((m) => m!.email),
           subject: `TaskFlow Reminder: ${task.task}`,
           html: taskReminderEmail({
             taskName: task.task,
@@ -46,10 +52,10 @@ export async function GET(req: NextRequest) {
           }),
         });
 
-        results.push(`Task reminder sent to ${member.name}: ${task.task}`);
+        results.push(`Task reminder sent to ${members.map((m) => m!.name).join(', ')}: ${task.task}`);
       } catch (emailError) {
-        console.error(`Failed to notify ${member.name}:`, emailError);
-        results.push(`FAILED task reminder ${member.name}: ${task.task}`);
+        console.error(`Failed to notify for task ${task.task}:`, emailError);
+        results.push(`FAILED task reminder: ${task.task}`);
       }
     }
 
