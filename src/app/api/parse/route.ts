@@ -57,7 +57,7 @@ Return a JSON object with these fields:
   "client_name": "client/company name",
   "contact_name": "contact person name, or null",
   "contact_email": "contact email, or null",
-  "client_type": "Corporate" | "AAC/Nursing Home" | "Distributor" | "API Distributor" | "SME" | "Insurance" | "Government" | null,
+  "client_type": "Corporate" | "AAC/Nursing Home" | "Distributor" | "API Distributor" | "SME" | "Insurance" | "Government" | "Partner" | null,
   "title": "short summary of the action",
   "assigned_to": "team member name (default: current user)",
   "due_date": "YYYY-MM-DD or null",
