@@ -52,7 +52,7 @@ ${taskList || 'No recent tasks'}
 
 Return a JSON object with these fields:
 {
-  "intent": "create_client" | "update_client" | "create_task" | "update_task" | "note",
+  "intent": "create_client" | "update_client" | "create_task" | "update_task" | "note" | "query",
   "client_match": "record ID of matched client, or null",
   "client_name": "client/company name",
   "contact_name": "contact person name, or null",
@@ -71,6 +71,7 @@ Return a JSON object with these fields:
 }
 
 Rules:
+- QUERY INTENT: If the user is ASKING about a client (e.g. "what's the update on NHS?", "tell me about Dr Raja", "status of Bedok AAC?", "any news on InsightGenie?", "show me NHS details"), use intent "query" with client_match set to the matched client's record ID. Do NOT use update_client or create_client for questions. For query intent, only client_match and client_name are required; all other fields can be null.
 - FUZZY MATCHING IS CRITICAL: When the user mentions a company/client name, ALWAYS check the existing clients list first. Match liberally: ignore spacing ("asia medic" = "Asiamedic"), case, punctuation, abbreviations ("SG Dental" = "Singapore Dental"), partial names ("Raffles" = "Raffles Medical Group"), and minor typos. If there is ANY plausible match (even partial), use "update_client" with that client's record ID in client_match. Only use "create_client" if you are confident the name is truly new and does not match any existing client.
 - NEVER assume create_client when the name is even remotely close to an existing client. When in doubt, set clarification_needed to ask the user: "Did you mean [closest match]? Or is this a new client?"
 - If mentioning an existing client by name, use "update_client" to update their status or notes.
@@ -147,8 +148,24 @@ Rules:
 
     // If updating an existing client, fetch full record for the confirmation card
     let existingClient = null;
-    if (parsed.client_match && parsed.intent === 'update_client') {
+    if (parsed.client_match && (parsed.intent === 'update_client' || parsed.intent === 'query')) {
       existingClient = await getClientById(parsed.client_match);
+    }
+
+    // For query intent, fetch related tasks and return a summary
+    if (parsed.intent === 'query' && existingClient) {
+      // Fetch all tasks and filter by client ID in code (Clients is a linked record field)
+      const allTasks = await getTasks().catch(() => []);
+      const clientTasks = allTasks.filter(
+        (t) => t.clientId && t.clientId.includes(existingClient!.id)
+      );
+      return NextResponse.json({
+        parsed,
+        sourceInput: input,
+        aiRawText: text,
+        existingClient,
+        clientTasks: clientTasks.slice(0, 10),
+      });
     }
 
     return NextResponse.json({ parsed, sourceInput: input, aiRawText: text, existingClient });

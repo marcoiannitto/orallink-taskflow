@@ -102,6 +102,35 @@ export default function DashboardPage() {
             parsed,
             aiRawText,
           }]);
+        } else if (parsed.intent === 'query') {
+          // Show client info directly in chat, no confirmation card
+          const ec = data.existingClient as ExistingClient | null;
+          const clientTasks = (data.clientTasks || []) as Array<{ task: string; dueDate?: string; status?: string; priority?: string }>;
+          if (ec) {
+            const lines: string[] = [];
+            lines.push(`**${ec.name}**`);
+            if (ec.status) lines.push(`Status: ${ec.status}`);
+            if (ec.clientType) lines.push(`Type: ${ec.clientType}`);
+            if (ec.responsible?.length) lines.push(`Responsible: ${ec.responsible.join(', ')}`);
+            if (ec.contactName) lines.push(`Contact: ${ec.contactName}${ec.contactEmail ? ' (' + ec.contactEmail + ')' : ''}`);
+            if (ec.nextFollowUp) lines.push(`Next follow-up: ${new Date(ec.nextFollowUp).toLocaleDateString('en-SG', { weekday: 'short', day: 'numeric', month: 'short' })}`);
+            if (ec.notes) {
+              lines.push('');
+              lines.push('**Notes:**');
+              lines.push(ec.notes);
+            }
+            if (clientTasks.length > 0) {
+              lines.push('');
+              lines.push(`**Tasks (${clientTasks.length}):**`);
+              for (const t of clientTasks) {
+                const due = t.dueDate ? new Date(t.dueDate).toLocaleDateString('en-SG', { day: 'numeric', month: 'short' }) : '';
+                lines.push(`- ${t.task} (${t.status || 'Open'}${due ? ', due ' + due : ''})`);
+              }
+            }
+            setMessages([...newMessages, { role: 'assistant', content: lines.join('\n') }]);
+          } else {
+            setMessages([...newMessages, { role: 'assistant', content: `I couldn't find a client matching "${parsed.client_name}". Would you like to add them?` }]);
+          }
         } else {
           const intentLabel = parsed.intent.replace(/_/g, ' ');
           const summary = parsed.intent.includes('client')
