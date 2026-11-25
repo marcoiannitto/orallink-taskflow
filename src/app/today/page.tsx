@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import NavBar from '@/components/NavBar';
 
 interface Task {
@@ -41,6 +42,7 @@ function daysOverdue(d: string, today: string) {
 }
 
 export default function TodayPage() {
+  const router = useRouter();
   const [data, setData] = useState<TodayData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -94,7 +96,7 @@ export default function TodayPage() {
                 </div>
                 <div className="space-y-2">
                   {data.dueTasks.map((t) => (
-                    <div key={`task-${t.id}`} className="bg-white rounded-xl border border-[#FF6F59]/30 p-3.5 shadow-sm">
+                    <div key={`task-${t.id}`} onClick={() => router.push('/tasks')} className="bg-white rounded-xl border border-[#FF6F59]/30 p-3.5 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
                       <div className="flex items-start gap-3">
                         <div className="mt-0.5 w-5 h-5 rounded bg-[#FF6F59]/10 flex items-center justify-center shrink-0">
                           <svg className="w-3 h-3 text-[#FF6F59]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -122,7 +124,7 @@ export default function TodayPage() {
                   {data.dueClients.map((c) => {
                     const lastNote = c.notes?.split('\n')[0]?.trim();
                     return (
-                      <div key={`client-${c.id}`} className="bg-white rounded-xl border border-[#FF6F59]/30 p-3.5 shadow-sm">
+                      <div key={`client-${c.id}`} onClick={() => router.push('/pipeline')} className="bg-white rounded-xl border border-[#FF6F59]/30 p-3.5 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
                         <div className="flex items-start gap-3">
                           <div className="mt-0.5 w-5 h-5 rounded bg-[#49A3CC]/10 flex items-center justify-center shrink-0">
                             <svg className="w-3 h-3 text-[#49A3CC]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -168,7 +170,7 @@ export default function TodayPage() {
                 </div>
                 <div className="space-y-2">
                   {data.upcomingTasks.map((t) => (
-                    <div key={`task-${t.id}`} className="bg-white rounded-xl border border-[#E5E7EB] p-3.5 shadow-sm">
+                    <div key={`task-${t.id}`} onClick={() => router.push('/tasks')} className="bg-white rounded-xl border border-[#E5E7EB] p-3.5 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
                       <div className="flex items-start gap-3">
                         <div className="mt-0.5 w-5 h-5 rounded bg-[#F3F4F6] flex items-center justify-center shrink-0">
                           <svg className="w-3 h-3 text-[#153543]/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -187,7 +189,7 @@ export default function TodayPage() {
                     </div>
                   ))}
                   {data.upcomingClients.map((c) => (
-                    <div key={`client-${c.id}`} className="bg-white rounded-xl border border-[#E5E7EB] p-3.5 shadow-sm">
+                    <div key={`client-${c.id}`} onClick={() => router.push('/pipeline')} className="bg-white rounded-xl border border-[#E5E7EB] p-3.5 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
                       <div className="flex items-start gap-3">
                         <div className="mt-0.5 w-5 h-5 rounded bg-[#F3F4F6] flex items-center justify-center shrink-0">
                           <svg className="w-3 h-3 text-[#153543]/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
