@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { getTasks, getClients } from '@/lib/airtable';
-import { TEAM_MEMBERS } from '@/lib/constants';
+import { hasPermission } from '@/lib/constants';
+import type { PermissionLevel } from '@/lib/constants';
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -10,10 +11,30 @@ export async function GET() {
   }
 
   try {
-    const [tasks, clients] = await Promise.all([
+    const [allTasks, allClients] = await Promise.all([
       getTasks(),
       getClients(),
     ]);
+
+    const userPermission: PermissionLevel = user.permission || 'member';
+    const isAdmin = hasPermission(userPermission, 'admin');
+
+    // Non-admins see only tasks assigned to them
+    const tasks = isAdmin
+      ? allTasks
+      : allTasks.filter((t) => {
+          if (!t.responsible) return false;
+          const names = t.responsible.split(',').map((n) => n.trim().toLowerCase());
+          return names.includes(user.name.toLowerCase());
+        });
+
+    // Non-admins see only clients they're responsible for
+    const clients = isAdmin
+      ? allClients
+      : allClients.filter((c) => {
+          if (!c.responsible || c.responsible.length === 0) return false;
+          return c.responsible.some((n) => n.toLowerCase() === user.name.toLowerCase());
+        });
 
     const today = new Date().toISOString().split('T')[0];
 
