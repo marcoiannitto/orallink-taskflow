@@ -40,7 +40,10 @@ export async function GET() {
     // Also return team names for the responsible dropdown
     const teamNames = TEAM_MEMBERS.map((m) => m.name);
 
-    return NextResponse.json({ tasks: visibleTasks, isAdmin, teamNames });
+    // Collect unique status values from Airtable for debugging/filtering
+    const statusValues = [...new Set(tasks.map((t) => t.status).filter(Boolean))];
+
+    return NextResponse.json({ tasks: visibleTasks, isAdmin, teamNames, statusValues });
   } catch (error) {
     console.error('Tasks fetch error:', error);
     return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 });

@@ -14,7 +14,6 @@ interface Task {
   description?: string;
 }
 
-const STATUS_OPTIONS = ['Open', 'In Progress', 'Done'];
 const PRIORITY_OPTIONS = ['High', 'Medium', 'Low'];
 const TYPE_OPTIONS = ['Follow-up', 'Onboarding', 'Admin', 'Technical', 'Sales'];
 
@@ -22,7 +21,8 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'mine'>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('active');
+  const [statusValues, setStatusValues] = useState<string[]>([]);
   const [userName, setUserName] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [teamNames, setTeamNames] = useState<string[]>([]);
@@ -47,6 +47,7 @@ export default function TasksPage() {
       setTasks(data.tasks || []);
       setIsAdmin(data.isAdmin || false);
       setTeamNames(data.teamNames || []);
+      if (data.statusValues?.length) setStatusValues(data.statusValues);
     } catch {
       console.error('Failed to fetch tasks');
     } finally {
@@ -106,8 +107,17 @@ export default function TasksPage() {
     }
   }, [editingId, editData]);
 
+  // Detect the "done" status label from Airtable (could be "Done", "Completed", etc.)
+  const doneStatus = statusValues.find((s) => /done|complete/i.test(s)) || 'Done';
+  // Detect the default/first non-done status for toggling back
+  const defaultStatus = statusValues.find((s) => s !== doneStatus) || 'Todo';
+
+  function isDone(task: Task) {
+    return task.status?.toLowerCase() === doneStatus.toLowerCase();
+  }
+
   async function toggleDone(task: Task) {
-    const newStatus = task.status === 'Done' ? 'Open' : 'Done';
+    const newStatus = isDone(task) ? defaultStatus : doneStatus;
     await fetch('/api/tasks', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -124,6 +134,7 @@ export default function TasksPage() {
   const filtered = tasks
     .filter((t) => {
       if (filter === 'mine' && t.responsible !== userName) return false;
+      if (statusFilter === 'active') return !isDone(t);
       if (statusFilter !== 'all' && t.status !== statusFilter) return false;
       return true;
     })
@@ -159,10 +170,11 @@ export default function TasksPage() {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="text-xs px-3 py-1.5 rounded-lg border border-[#D1D5DB] bg-white text-[#153543] font-semibold focus:outline-none focus:ring-2 focus:ring-[#49A3CC]"
             >
-              <option value="all">All Statuses</option>
-              <option value="Open">Open</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Done">Done</option>
+              <option value="active">Active</option>
+              <option value="all">All (incl. done)</option>
+              {statusValues.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
             </select>
           </div>
         </div>
@@ -187,7 +199,7 @@ export default function TasksPage() {
                   className={`bg-white rounded-xl border p-4 flex items-start gap-3 shadow-sm transition-all cursor-pointer ${
                     editingId === task.id
                       ? 'border-[#49A3CC] shadow-md ring-1 ring-[#49A3CC]/20 rounded-b-none'
-                      : isOverdue(task.dueDate) && task.status !== 'Done'
+                      : isOverdue(task.dueDate) && !isDone(task)
                         ? 'border-[#FF6F59]/50 bg-red-50/30 hover:shadow-md'
                         : 'border-[#E5E7EB] hover:shadow-md'
                   }`}
@@ -195,19 +207,19 @@ export default function TasksPage() {
                   <button
                     onClick={(e) => { e.stopPropagation(); toggleDone(task); }}
                     className={`mt-0.5 w-5 h-5 rounded-full border-2 shrink-0 transition-all ${
-                      task.status === 'Done'
+                      isDone(task)
                         ? 'bg-[#49A3CC] border-[#49A3CC]'
                         : 'border-[#D1D5DB] hover:border-[#49A3CC] hover:bg-[#49A3CC]/10'
                     }`}
                   >
-                    {task.status === 'Done' && (
+                    {isDone(task) && (
                       <svg className="w-3 h-3 mx-auto text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
                     )}
                   </button>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-semibold ${task.status === 'Done' ? 'line-through text-[#153543]/30' : 'text-[#153543]'}`}>
+                    <p className={`text-sm font-semibold ${isDone(task) ? 'line-through text-[#153543]/30' : 'text-[#153543]'}`}>
                       {task.task}
                     </p>
                     <div className="flex flex-wrap items-center gap-2 mt-1.5">
@@ -217,7 +229,7 @@ export default function TasksPage() {
                       {task.responsible && task.dueDate && <span className="text-[#D1D5DB]">·</span>}
                       {task.dueDate && (
                         <span className={`text-[11px] font-medium ${
-                          isOverdue(task.dueDate) && task.status !== 'Done'
+                          isOverdue(task.dueDate) && !isDone(task)
                             ? 'text-[#FF6F59]'
                             : 'text-[#153543]/40'
                         }`}>
@@ -277,7 +289,7 @@ export default function TasksPage() {
                           onChange={(e) => updateField('status', e.target.value)}
                           className="w-full mt-1 px-3 py-2 text-sm border border-[#D1D5DB] rounded-lg bg-white text-[#153543] focus:outline-none focus:ring-2 focus:ring-[#49A3CC] focus:border-transparent"
                         >
-                          {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                          {(statusValues.length > 0 ? statusValues : ['Todo', 'In Progress', 'Done']).map((s) => <option key={s} value={s}>{s}</option>)}
                         </select>
                       </div>
                     </div>
