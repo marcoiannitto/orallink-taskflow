@@ -215,7 +215,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-[#F7F7F7] flex flex-col">
       <NavBar />
-      <main className="flex-1 flex flex-col max-w-2xl mx-auto w-full px-4">
+      <main className="flex-1 flex flex-col max-w-2xl mx-auto w-full px-3 sm:px-4 pb-16 sm:pb-0">
         {/* Chat messages */}
         <div className="flex-1 py-6 space-y-4 overflow-y-auto">
           {messages.length === 0 && (
@@ -244,7 +244,7 @@ export default function DashboardPage() {
                 </div>
               )}
               <div
-                className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                className={`max-w-[85%] sm:max-w-[80%] rounded-2xl px-3.5 sm:px-4 py-2.5 text-sm leading-relaxed ${
                   msg.role === 'user'
                     ? 'bg-[#153543] text-white rounded-br-md shadow-sm'
                     : 'bg-white border border-[#E5E7EB] text-[#153543] rounded-bl-md shadow-sm'
@@ -263,7 +263,7 @@ export default function DashboardPage() {
               <div className="w-7 h-7 rounded-full bg-[#153543] flex items-center justify-center shrink-0 mr-2 mt-1">
                 <Image src="/logo-tooth.png" alt="" width={16} height={16} className="w-4 h-4 opacity-80" />
               </div>
-              <div className="max-w-[85%] w-full">
+              <div className="max-w-[92%] sm:max-w-[85%] w-full">
                 <div className="bg-white rounded-xl border border-[#E5E7EB] overflow-hidden shadow-sm">
                   <div className="bg-[#153543] px-4 py-2.5 flex items-center justify-between">
                     <span className="text-[10px] text-white/50 uppercase tracking-[0.15em] font-semibold">
@@ -582,9 +582,9 @@ function NotifyCheckboxes({ selected, onChange }: { selected: string[]; onChange
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-3">
-      <span className="text-[10px] text-[#153543]/40 uppercase tracking-wider w-24 pt-1 shrink-0 font-semibold">{label}</span>
-      <div className="flex-1">{children}</div>
+    <div className="flex items-start gap-2 sm:gap-3">
+      <span className="text-[10px] text-[#153543]/40 uppercase tracking-wider w-16 sm:w-24 pt-1 shrink-0 font-semibold">{label}</span>
+      <div className="flex-1 min-w-0">{children}</div>
     </div>
   );
 }

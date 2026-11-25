@@ -16,6 +16,11 @@ body {
   font-family: 'Trebuchet MS', Arial, sans-serif;
 }
 
+/* Safe area for iPhone home indicator */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;

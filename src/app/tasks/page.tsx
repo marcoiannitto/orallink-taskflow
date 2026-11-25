@@ -140,7 +140,7 @@ export default function TasksPage() {
   return (
     <div className="min-h-screen bg-[#F7F7F7]">
       <NavBar />
-      <main className="max-w-3xl mx-auto px-4 py-6">
+      <main className="max-w-3xl mx-auto px-3 sm:px-4 py-6 pb-20 sm:pb-6">
         <div className="flex items-center justify-between mb-5">
           <h1 className="text-lg font-bold text-[#153543] uppercase tracking-[0.15em]">Tasks</h1>
           <div className="flex gap-2">
