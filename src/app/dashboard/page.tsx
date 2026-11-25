@@ -102,6 +102,31 @@ export default function DashboardPage() {
             parsed,
             aiRawText,
           }]);
+        } else if (parsed.intent === 'query_list') {
+          // Show filtered list of clients/tasks in chat
+          const listClients = (data.queryListClients || []) as Array<{ name: string; status?: string; nextFollowUp?: string; responsible: string[] }>;
+          const listTasks = (data.queryListTasks || []) as Array<{ task: string; dueDate?: string; status?: string; responsible?: string }>;
+          const lines: string[] = [];
+          if (listClients.length > 0) {
+            lines.push(`**Clients (${listClients.length}):**`);
+            for (const c of listClients) {
+              const followUp = c.nextFollowUp ? new Date(c.nextFollowUp).toLocaleDateString('en-SG', { day: 'numeric', month: 'short' }) : '';
+              const owner = c.responsible?.length ? c.responsible.join(', ') : '';
+              lines.push(`- **${c.name}** (${c.status || 'Unknown'}${followUp ? ', follow-up ' + followUp : ''}${owner ? ', ' + owner : ''})`);
+            }
+          }
+          if (listTasks.length > 0) {
+            if (lines.length > 0) lines.push('');
+            lines.push(`**Tasks (${listTasks.length}):**`);
+            for (const t of listTasks) {
+              const due = t.dueDate ? new Date(t.dueDate).toLocaleDateString('en-SG', { day: 'numeric', month: 'short' }) : '';
+              lines.push(`- ${t.task} (${t.status || 'Open'}${due ? ', due ' + due : ''}${t.responsible ? ', ' + t.responsible : ''})`);
+            }
+          }
+          if (lines.length === 0) {
+            lines.push('Nothing found matching that criteria.');
+          }
+          setMessages([...newMessages, { role: 'assistant', content: lines.join('\n') }]);
         } else if (parsed.intent === 'query') {
           // Show client info directly in chat, no confirmation card
           const ec = data.existingClient as ExistingClient | null;

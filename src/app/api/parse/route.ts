@@ -52,7 +52,7 @@ ${taskList || 'No recent tasks'}
 
 Return a JSON object with these fields:
 {
-  "intent": "create_client" | "update_client" | "create_task" | "update_task" | "note" | "query",
+  "intent": "create_client" | "update_client" | "create_task" | "update_task" | "note" | "query" | "query_list",
   "client_match": "record ID of matched client, or null",
   "client_name": "client/company name",
   "contact_name": "contact person name, or null",
@@ -71,7 +71,8 @@ Return a JSON object with these fields:
 }
 
 Rules:
-- QUERY INTENT: If the user is ASKING about a client (e.g. "what's the update on NHS?", "tell me about Dr Raja", "status of Bedok AAC?", "any news on InsightGenie?", "show me NHS details"), use intent "query" with client_match set to the matched client's record ID. Do NOT use update_client or create_client for questions. For query intent, only client_match and client_name are required; all other fields can be null.
+- QUERY INTENT (single client): If the user is ASKING about a SPECIFIC client (e.g. "what's the update on NHS?", "tell me about Dr Raja", "status of Bedok AAC?"), use intent "query" with client_match set to the matched client's record ID. For query intent, only client_match and client_name are required; all other fields can be null.
+- QUERY_LIST INTENT (multiple clients): If the user asks about MULTIPLE clients or a filtered view (e.g. "which clients need follow-up today?", "what's due this week?", "show me all active clients", "any overdue tasks?", "what clients need update today"), use intent "query_list". Set the "description" field to a brief summary of what they want to see (e.g. "clients with follow-up due today", "overdue tasks", "all clients in Pilot status"). Set "due_date" to the reference date if one is mentioned (e.g. today's date for "today", end of week for "this week"). All other fields can be null. Do NOT try to list the clients yourself.
 - FUZZY MATCHING IS CRITICAL: When the user mentions a company/client name, ALWAYS check the existing clients list first. Match liberally: ignore spacing ("asia medic" = "Asiamedic"), case, punctuation, abbreviations ("SG Dental" = "Singapore Dental"), partial names ("Raffles" = "Raffles Medical Group"), and minor typos. If there is ANY plausible match (even partial), use "update_client" with that client's record ID in client_match. Only use "create_client" if you are confident the name is truly new and does not match any existing client.
 - NEVER assume create_client when the name is even remotely close to an existing client. When in doubt, set clarification_needed to ask the user: "Did you mean [closest match]? Or is this a new client?"
 - If mentioning an existing client by name, use "update_client" to update their status or notes.
@@ -144,6 +145,47 @@ Rules:
           { status: 500 }
         );
       }
+    }
+
+    // For query_list intent, filter and return matching clients/tasks
+    if (parsed.intent === 'query_list') {
+      const refDate = parsed.due_date || new Date().toISOString().split('T')[0];
+      const desc = (parsed.description || '').toLowerCase();
+
+      // Build filtered lists based on what the user asked
+      const matchingClients = clients.filter((c) => {
+        // Follow-up due today or overdue
+        if (desc.includes('follow') || desc.includes('update') || desc.includes('due')) {
+          if (!c.nextFollowUp) return false;
+          return c.nextFollowUp <= refDate && c.status !== 'Inactive';
+        }
+        // Status filter
+        if (desc.includes('active')) return c.status === 'Active';
+        if (desc.includes('pilot')) return c.status === 'Pilot';
+        if (desc.includes('exploration')) return c.status === 'Exploration';
+        if (desc.includes('mou')) return c.status === 'MOU';
+        if (desc.includes('inactive')) return c.status === 'Inactive';
+        // Default: all non-inactive
+        return c.status !== 'Inactive';
+      });
+
+      const allTasks = await getTasks().catch(() => []);
+      const matchingTasks = desc.includes('task') || desc.includes('overdue')
+        ? allTasks.filter((t) => {
+            if (t.status === 'Done') return false;
+            if (desc.includes('overdue') && t.dueDate) return t.dueDate < refDate;
+            if (t.dueDate) return t.dueDate <= refDate;
+            return false;
+          })
+        : [];
+
+      return NextResponse.json({
+        parsed,
+        sourceInput: input,
+        aiRawText: text,
+        queryListClients: matchingClients,
+        queryListTasks: matchingTasks,
+      });
     }
 
     // If updating an existing client, fetch full record for the confirmation card
